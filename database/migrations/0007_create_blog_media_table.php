@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS blog_media (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    alt_text VARCHAR(255) NULL,
+    uploaded_by INT UNSIGNED NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_blog_media_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES blog_users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

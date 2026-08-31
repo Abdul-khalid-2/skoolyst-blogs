@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Categories \u2014 Skoolyst Blog Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/dashboard.css" />
+</head>
+<body>
+  <div class="dash-layout">
+    <div class="sidebar-backdrop"></div>
+    <aside class="dash-sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-dot"></span>
+        Skoolyst
+        <span class="brand-sub">Blog</span>
+      </div>
+      <ul class="sidebar-nav">
+        <li class="sidebar-section-label">Main</li>
+        <li><a href="index.html"><span class="nav-icon">\u{1F3E0}</span> Overview</a></li>
+        <li><a href="posts.html"><span class="nav-icon">\u{1F4DD}</span> Posts</a></li>
+        <li><a href="post-editor.html"><span class="nav-icon">\u270f\uFE0F</span> New Post</a></li>
+        <li><a href="categories.html" class="active"><span class="nav-icon">\u{1F3F7}</span> Categories</a></li>
+        <li><a href="media.html"><span class="nav-icon">\u{1F4F7}</span> Media</a></li>
+        <li class="sidebar-section-label">System</li>
+        <li><a href="#" onclick="return false"><span class="nav-icon">\u2699\uFE0F</span> Settings</a></li>
+        <li><a href="../index.html"><span class="nav-icon">\u{1F517}</span> View Site</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        \u00A9 2026 Skoolyst
+      </div>
+    </aside>
+
+    <div class="dash-main">
+      <header class="dash-topbar">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <button class="dash-sidebar-toggle" aria-label="Toggle sidebar">\u2630</button>
+          <div class="topbar-title">
+            <h1>Categories</h1>
+            <p>Organize your blog content</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <a href="post-editor.html" class="btn-primary-dash">+ New Post</a>
+          <div class="topbar-user">
+            <img src="https://i.pravatar.cc/150?img=47" alt="Sarah Chen" />
+            <div>
+              <div class="user-name">Sarah Chen</div>
+              <div class="user-role">Editor</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="dash-content">
+        <div class="dash-card">
+          <div class="card-header">
+            <h3>All Categories</h3>
+            <button type="button" id="cat-add-btn" class="btn-primary-dash">+ Add Category</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div id="categories-list"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="cat-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="cat-modal-title">Add Category</h3>
+        <button type="button" class="modal-close" id="cat-modal-close" aria-label="Close">\u2715</button>
+      </div>
+      <div class="modal-body" id="cat-modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" id="cat-cancel">Cancel</button>
+        <button type="button" id="cat-save" class="btn-primary-dash">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/mock-data.js"></script>
+  <script src="../assets/js/components.js"></script>
+  <script src="../assets/js/dashboard.js"></script>
+</body>
+</html>

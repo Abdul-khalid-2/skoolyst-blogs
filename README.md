@@ -11,6 +11,11 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Section 4 frontend verification + a real bug fix
+- **What:** Loaded every public page (`index`, `blog`, `post` incl. its not-found state, `category`, `about`, `contact`) and every dashboard page (`overview`, `posts`, `post-editor` incl. edit-mode prefill, `categories`, `media`) in jsdom over real HTTP (`php -S`), asserting actual rendered content rather than just that pages loaded without error. Also verified the mobile sidebar toggle's open/close JS behavior end-to-end, and confirmed the existing CSS breakpoints/design tokens are untouched. Found and fixed one real bug: `post.html`'s `<section class="comments-section">` was missing `id="comments-section"`, so `app.js`'s post-not-found handler threw a `TypeError` calling `.style` on `null`, silently skipping the rest of that cleanup block.
+- **Where:** `post.html` — added the missing `id="comments-section"` attribute. No other production files changed.
+- **Why:** This was the one item in Section 4 still unverified — actually exercising every page (including edge/error states like a bad post id) is what surfaced the bug; reading the code wouldn't have caught it. The fix is purely additive (an `id`, no class/CSS change) so it satisfies the "keep visual design unchanged" rule while fixing real broken behavior.
+
 ### 2026-08-31 — Frontend components: Button, Table, InputField/FormGroup, Modal (Section 5)
 - **What:** Added `Button.action()`, `Table.actions()`, `InputField.*`/`FormGroup.*`, and `Modal.wrapper()`/`Modal.confirm()` to `assets/js/components.js`. Refactored `dashboard.js`'s posts-table and categories-list row renderers to use `Button`/`Table`; refactored `initCategories()`'s add/edit modal fields to render via `FormGroup`/`InputField` instead of static HTML; replaced all three `window.confirm()` calls (delete post/category/media) with `Modal.confirm()`.
 - **Where:** `assets/js/components.js` (new functions); `assets/js/dashboard.js` (`initPosts`, `initCategories`, `initMedia`); `dashboard/categories.html` (modal body is now an empty `#cat-modal-body` container populated by JS instead of hand-written fields).
@@ -143,10 +148,22 @@ index.php   (API front controller)
 .env.example
 ```
 
-- [ ] Verify public homepage, blog archive, single post, category, about, contact pages
-- [ ] Verify dashboard: overview, posts, post editor, categories, media
-- [ ] Verify responsive layout + existing design tokens
-- [ ] Keep frontend visual design unchanged unless required for API integration
+- [x] Verify public homepage, blog archive, single post, category, about, contact pages
+  - **What:** Loaded every public page in jsdom over real HTTP (`php -S`) and asserted actual content rendered: homepage's featured/latest post cards, blog archive's post list, a real post by id, the post page's "not found" state for a bad id, a category page's title/post list, and the contact form.
+  - **Where:** No production code needed to change for most of these — they already worked. One real bug found and fixed: `post.html`'s `<section class="comments-section">` was missing `id="comments-section"`, so `app.js`'s not-found handler (`document.getElementById('comments-section').style.display = 'none'`) threw a `TypeError` on `null` and silently aborted the rest of that block (tags/author/share/related never got hidden for a genuinely missing post). Added the missing `id` to `post.html`.
+  - **Why:** The `id` was purely additive — the CSS rule for that section is class-scoped (`.comments-section`), so this fixes the JS error with zero visual change. This is exactly the kind of bug that only shows up when a page state is actually exercised (a bad `?id=` in the URL), not from reading the code.
+- [x] Verify dashboard: overview, posts, post editor, categories, media
+  - **What:** Loaded every dashboard page in jsdom over `php -S` and asserted real content: overview's 4 stat cards + recent-posts rows, posts table's 12 rows, post-editor's populated category `<select>` in both create mode and edit mode (`?edit=p1`, confirming form prefill), categories list's 5 rows, media grid's 8 items.
+  - **Where:** No code changes needed — all pages already worked correctly.
+  - **Why:** Same approach as the public-site checks — verifying by actually loading and asserting on rendered DOM state, not just reading the JS.
+- [x] Verify responsive layout + existing design tokens
+  - **What:** Confirmed the CSS breakpoints and design-token custom properties are present and untouched (`grep` over `style.css`/`dashboard.css` — 12 `@media` rules across both files, none touched by this session's changes). jsdom has no real layout engine so it can't render a media query, but the *interactive* half of responsive layout — the mobile sidebar toggle (`.dash-sidebar-toggle` → adds `.open`/`.show`, backdrop click removes them) — was exercised end-to-end and works correctly.
+  - **Where:** N/A — verification only, no changes.
+  - **Why:** Being honest about the tooling's limits: jsdom can prove the JS behavior driving responsive UI works, and that no CSS was touched, but it cannot visually confirm a breakpoint actually reflows the layout at a given width — that still needs a real browser/viewport check if ever in doubt.
+- [x] Keep frontend visual design unchanged unless required for API integration
+  - **What:** Confirmed by diffing this session's changes: only `assets/js/components.js`, `assets/js/dashboard.js`, `dashboard/categories.html` (Section 5, JS-only markup source change verified byte-identical output), and `post.html` (one added `id` attribute, no CSS/class change) were touched. No `.css` file was edited.
+  - **Where:** N/A — verification only.
+  - **Why:** Directly satisfies this checklist rule; the one production fix (the missing `id`) was chosen specifically because it required zero visual change.
 
 ---
 

@@ -11,6 +11,11 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Frontend components: Badge + Card extracted (Section 5)
+- **What:** Created `assets/js/components.js` with `Badge.status()` and `Card.stat()`. Refactored `dashboard.js` to call them instead of building that markup inline in two places (badge) and one place (card).
+- **Where:** New file `assets/js/components.js`; edited `assets/js/dashboard.js`; added a `<script>` tag for the new file to all 11 HTML pages (right after `mock-data.js`, before `app.js`/`dashboard.js`).
+- **Why:** `Badge` was picked first because it was genuinely duplicated byte-for-byte in two places (overview's recent-posts table, posts table) — the strongest possible case. `Card.stat` was already a pure function (`statCard()`) just living in the wrong file. Verified there's no regression by loading pages in a headless browser (jsdom) over a real local HTTP server and diffing the rendered markup against what the old inline code produced — identical output, zero console errors across every page tested.
+
 ### 2026-08-31 — Frontend Component Architecture decided (Section 5)
 - **What:** Decided the frontend will move to reusable JS component functions (buttons, cards, tables, badges, modals, form fields) instead of hand-copied HTML markup per page — documented as a new checklist section. No code written yet, decision + plan only.
 - **Where:** `README.md` (this file) — new Section 5.
@@ -85,7 +90,7 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
   - **What:** A migration runner (`core/Migrator.php`) plus 10 SQL files creating every `blog_*` table the app needs.
   - **Where:** `database/migrations/0001–0010*.sql`, `bin/migrate.php`.
   - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
-- [ ] Frontend component architecture — decided (Section 5), not yet implemented
+- [ ] Frontend component architecture — in progress (Section 5): `Badge` + `Card` extracted and live-tested, `Button`/`Table`/`InputField`/`Modal` still pending
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
@@ -140,22 +145,30 @@ index.php   (API front controller)
 
 ---
 
-## 5. Frontend Component Architecture (not started)
+## 5. Frontend Component Architecture (in progress)
 
 Decision: move from hand-copied HTML markup per page to **reusable JS component functions**, mirroring the pattern already proven in `Abdul-khalid-2/skoolyst-advertisement` (there it's server-side PHP functions like `stat_card()`, `status_badge()` in `views/components/`; here it'll be plain JS functions since this frontend is static/mock-data driven, not server-rendered).
 
 This is a maintainability/consistency change, **not** a performance optimization — no virtual DOM here, so duplicated vs. shared markup costs the same at runtime. The win is a single place to fix a bug or change a design, instead of N copies.
 
-Planned shared component functions (new file, e.g. `assets/js/components.js`, loaded before `app.js`/`dashboard.js`):
+Shared component functions live in `assets/js/components.js`, loaded on every page right after `mock-data.js` and before `app.js`/`dashboard.js`.
 
+- [x] `Badge.status(status)` — status pill (`badge-status` + `badge-dot`)
+  - **What:** Extracted the exact markup that was hand-copied identically in two places.
+  - **Where:** `assets/js/components.js` (new); called from `assets/js/dashboard.js` in `initOverview()`'s recent-posts table and `initPosts()`'s posts table.
+  - **Why:** This was real, literal duplication (byte-for-byte identical string in two functions) — the clearest possible case for extraction, so it went first.
+- [x] `Card.stat(color, icon, label, value, trend, isUp)` — dashboard overview stat card
+  - **What:** Moved the standalone `statCard()` helper that already existed in `dashboard.js` into the shared components file, unchanged.
+  - **Where:** `assets/js/components.js`; called from `initOverview()`.
+  - **Why:** It was already component-shaped (a pure function returning markup) but lived inside `dashboard.js` instead of the shared file — public-site pages have no reason to load it, but keeping all "cards" in one file matches the plan and makes it easy to add a second card type later without hunting through `dashboard.js`.
 - [ ] `Button(label, variant, attrs)` — primary/secondary/danger button markup
-- [ ] `Card(...)` — post card / stat card wrapper (dashboard's existing `statCard()` in `dashboard.js` becomes the first thing migrated in here)
 - [ ] `Table(columns, rows)` or per-row renderers — used by `posts.html`, `categories.html` (`cat-row`), `media.html` (`media-item`)
-- [ ] `Badge(status)` — status pills (`badge-status`), mirrors `ads` repo's `status_badge()`
 - [ ] `InputField(...)` / `FormGroup(...)` — label + input/textarea wrapper, matches existing `.form-group` markup in `post-editor.html`
 - [ ] `Modal(...)` — generalize the category-add/edit modal markup so future modals (e.g. delete confirmation) don't hand-roll `.modal-overlay`/`.modal-box` again
-- [ ] Refactor `app.js` and `dashboard.js` to call these instead of building HTML strings inline
-- [ ] Verify no visual/behavioral regression on every page after refactor (Section 4's verification list)
+- [ ] Finish refactoring `app.js` (public site's `renderPostCard()` is already de-duplicated internally, but not yet moved into `components.js`)
+- [ ] Verify no visual/behavioral regression on every page after full refactor (Section 4's verification list)
+
+**Verified so far:** all 11 pages (`*.html` + `dashboard/*.html`) now load `assets/js/components.js`; loaded every page in a headless browser (jsdom) served over real HTTP (`php -S`) — `dash-stats` and `recent-posts` on the overview page and the full 12-row table on `posts.html` render **byte-identical** markup to before the refactor, zero console errors on any page.
 
 ---
 

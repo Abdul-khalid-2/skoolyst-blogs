@@ -85,10 +85,10 @@
     };
 
     statsEl.innerHTML =
-      statCard('blue', '\u{1F4DD}', 'Total Posts', stats.total, '+12%', true) +
-      statCard('green', '\u2705', 'Published', stats.published, '+3', true) +
-      statCard('amber', '\u270f\uFE0F', 'Drafts', stats.drafts, '\u2014', false) +
-      statCard('purple', '\u{1F441}', 'Total Views', stats.views.toLocaleString(), '+18%', true);
+      Card.stat('blue', '\u{1F4DD}', 'Total Posts', stats.total, '+12%', true) +
+      Card.stat('green', '\u2705', 'Published', stats.published, '+3', true) +
+      Card.stat('amber', '\u270f\uFE0F', 'Drafts', stats.drafts, '\u2014', false) +
+      Card.stat('purple', '\u{1F441}', 'Total Views', stats.views.toLocaleString(), '+18%', true);
 
     /* Bar chart */
     var chartEl = document.getElementById('views-chart');
@@ -117,21 +117,12 @@
         return '<tr>' +
           '<td><a href="post-editor.html?edit=' + p.id + '" class="table-title">' + escapeHtml(p.title) + '</a></td>' +
           '<td>' + escapeHtml(cat.name) + '</td>' +
-          '<td><span class="badge-status ' + p.status + '"><span class="badge-dot"></span>' + p.status + '</span></td>' +
+          '<td>' + Badge.status(p.status) + '</td>' +
           '<td>' + p.views.toLocaleString() + '</td>' +
           '<td>' + escapeHtml(formatDate(p.publishedDate)) + '</td>' +
         '</tr>';
       }).join('');
     }
-  }
-
-  function statCard(color, icon, label, value, trend, isUp) {
-    return '<div class="stat-card">' +
-      '<div class="stat-icon ' + color + '">' + icon + '</div>' +
-      '<div class="stat-label">' + escapeHtml(label) + '</div>' +
-      '<div class="stat-value">' + value + '</div>' +
-      (trend ? '<div class="stat-trend ' + (isUp ? 'up' : '') + '">' + trend + ' vs last month</div>' : '') +
-    '</div>';
   }
 
   /* ---- Posts management ---- */
@@ -173,7 +164,7 @@
             '</div>' +
           '</td>' +
           '<td>' + escapeHtml(cat.name) + '</td>' +
-          '<td><span class="badge-status ' + p.status + '"><span class="badge-dot"></span>' + p.status + '</span></td>' +
+          '<td>' + Badge.status(p.status) + '</td>' +
           '<td>' + p.views.toLocaleString() + '</td>' +
           '<td>' + escapeHtml(formatDate(p.publishedDate)) + '</td>' +
           '<td>' +

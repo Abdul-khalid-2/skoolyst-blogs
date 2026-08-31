@@ -11,11 +11,6 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
-### 2026-08-31 — Dashboard sidebar icon rendering fix
-- **What:** Replaced literal JavaScript-style Unicode escape sequences in every dashboard HTML page with their intended visible characters. The sidebar now displays its home, posts, new-post, categories, media, settings, and view-site icons; its footer also displays the copyright symbol correctly.
-- **Where:** `dashboard/index.html`, `dashboard/posts.html`, `dashboard/post-editor.html`, `dashboard/categories.html`, and `dashboard/media.html`.
-- **Why:** `\\u{...}` and `\\u....` are JavaScript string syntax, not HTML entity syntax, so browsers rendered the escape text instead of the intended symbols. Using UTF-8 characters is valid because every page already declares `<meta charset="UTF-8">`.
-
 ### 2026-08-31 — Frontend components: post-editor fields (Section 5)
 - **What:** Replaced the post editor's hand-written content, SEO, status, category, tags, and cover-upload fields with markup rendered from `FormGroup` and `InputField`. Added the small shared primitives needed for the editor: select, radio, file, and input/textarea class support.
 - **Where:** `assets/js/components.js`, `assets/js/dashboard.js`, and `dashboard/post-editor.html`.

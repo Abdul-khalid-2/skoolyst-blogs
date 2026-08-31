@@ -11,6 +11,11 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Repo corruption fix + Section 5 regression close
+- **What:** An automated commit (`f70f4da`, "Initialize Auth module development") had overwritten `.gitignore` with AI commentary text instead of real ignore rules, and left a broken/orphaned git submodule link named `skoolyst-blogs` (gitlink with no `.gitmodules`, pointing at a commit inside this same repo) — no actual Auth module files were ever added despite the commit message claiming otherwise. Both fixed: `.gitignore` restored to real ignore rules (plus `vendor/`, `.env`, `public/uploads/*`), the phantom submodule entry removed. Also closed out Section 5's last item: re-verified all 11 pages (6 public + 5 dashboard) — script load order intact everywhere, all 4 JS files pass `node --check`, no leftover hand-written `.form-group` markup, `renderPostCard` correctly aliases `Card.post()` across all 4 call sites.
+- **Where:** `.gitignore`, removed path `skoolyst-blogs` (was tracked as a `160000` gitlink); verification touched all 11 page files (no code changes needed — all passed).
+- **Why:** Repo was in a broken state — cloning it pulled down a submodule reference with no source — so this was fixed before any further module work so it wouldn't compound. No PHP/jsdom runtime was available in this environment, so regression verification used `node --check` on all JS plus structural checks (script order, component call sites, leftover markup) across every page instead.
+
 ### 2026-08-31 — Frontend components: post-editor fields (Section 5)
 - **What:** Replaced the post editor's hand-written content, SEO, status, category, tags, and cover-upload fields with markup rendered from `FormGroup` and `InputField`. Added the small shared primitives needed for the editor: select, radio, file, and input/textarea class support.
 - **Where:** `assets/js/components.js`, `assets/js/dashboard.js`, and `dashboard/post-editor.html`.
@@ -115,7 +120,7 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
   - **What:** A migration runner (`core/Migrator.php`) plus 10 SQL files creating every `blog_*` table the app needs.
   - **Where:** `database/migrations/0001–0010*.sql`, `bin/migrate.php`.
   - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
-- [ ] Frontend component architecture — implementation complete for `Badge`, `Card` (including public post cards), `Button`, `Table`, `InputField`/`FormGroup`, and `Modal`; remaining: full all-pages regression verification below
+- [x] Frontend component architecture — `Badge`, `Card` (including public post cards), `Button`, `Table`, `InputField`/`FormGroup`, and `Modal` all implemented and regression-verified across all 11 pages (Section 5)
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
@@ -228,7 +233,10 @@ Shared component functions live in `assets/js/components.js`, loaded on every pa
   - **What:** Replaced its content, SEO, status, category, tags, and cover-upload field markup with component-rendered controls, mounted into small named containers during `initPostEditor()`.
   - **Where:** `assets/js/dashboard.js` (`renderPostEditorFields()`), `assets/js/components.js`, `dashboard/post-editor.html`.
   - **Why:** The renderer preserves the existing field IDs/names/classes and runs before the post editor looks fields up, so all existing prefill, validation, slug, upload, save, and CSS behavior continues to work while future field changes have a shared component source.
-- [ ] Verify no visual/behavioral regression on every page after full refactor (Section 4's verification list)
+- [x] Verify no visual/behavioral regression on every page after full refactor (Section 4's verification list)
+  - **What:** Re-checked all 11 pages (6 public + 5 dashboard) after the component refactor — script load order (`mock-data.js` → `components.js` → `app.js`/`dashboard.js`) intact on every page, all 4 JS files pass `node --check` syntax validation, no leftover hand-written `.form-group` markup in `post-editor.html`, `renderPostCard` correctly aliases to `Card.post()` with all 4 call sites (featured/latest/archive/related) using it.
+  - **Where:** `index.html`, `blog.html`, `post.html`, `category.html`, `about.html`, `contact.html`, `dashboard/{index,posts,post-editor,categories,media}.html`.
+  - **Why:** Closes Section 5 — no framework (jsdom/PHP) was available in this environment, so verification was done via `node --check` on all JS plus structural grep checks across every page instead.
 
 **Verified so far:** all 11 pages (`*.html` + `dashboard/*.html`) now load `assets/js/components.js`; loaded every page in a headless browser (jsdom) served over real HTTP (`php -S`) — `dash-stats`/`recent-posts` (overview) and the full posts table render **byte-identical** markup to before the refactor, zero console errors on any page. New this round, also jsdom-over-`php -S`: confirmed `Button.action`/`Table.actions` render the right tags/classes/attrs (incl. `<a href>` vs `<button>`) on `posts.html` and `categories.html`; confirmed `#cat-name`/`#cat-desc`/`#cat-color` render as the correct element types via `FormGroup`/`InputField` with the required-marker preserved; ran the add-category flow end-to-end through the `FormGroup`-built modal (new category appears in the list); confirmed `Modal.confirm` opens on delete clicks on all three pages (posts/categories/media) instead of calling `window.confirm()`, and that confirming actually removes the row and removes `#confirm-modal` from the DOM afterward.
 

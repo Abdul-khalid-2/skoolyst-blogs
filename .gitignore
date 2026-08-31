@@ -1,5 +1,31 @@
-The provided input shows only a modified file named 'skoolyst-blogs' which appears to be a source/config file. There are no build artifacts, dependencies, temporary files, or other items that should be ignored according to the rules.
+# Dependencies
+vendor/
+node_modules/
 
-Since the change list contains only what appears to be a source/config file and no build artifacts, dependencies, or temp files, the output should be empty.
+# Environment
+.env
+.env.local
+*.env.*
 
-(No content to output)
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Uploaded media (runtime content, not source)
+public/uploads/*
+!public/uploads/media/.gitkeep
+
+# Compressed / build artifacts
+*.zip
+*.gz
+*.tar

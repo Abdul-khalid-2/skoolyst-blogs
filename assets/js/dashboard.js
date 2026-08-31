@@ -167,12 +167,14 @@
           '<td>' + Badge.status(p.status) + '</td>' +
           '<td>' + p.views.toLocaleString() + '</td>' +
           '<td>' + escapeHtml(formatDate(p.publishedDate)) + '</td>' +
-          '<td>' +
-            '<div class="table-actions">' +
-              '<a href="post-editor.html?edit=' + p.id + '" class="action-btn" title="Edit" aria-label="Edit">\u270f\uFE0F</a>' +
-              '<button class="action-btn toggle-pub" data-id="' + p.id + '" title="' + (p.status === 'published' ? 'Unpublish' : 'Publish') + '" aria-label="Toggle publish">' + (p.status === 'published' ? '\u{1F441}' : '\u{1F4E2}') + '</button>' +
-              '<button class="action-btn danger delete-post" data-id="' + p.id + '" title="Delete" aria-label="Delete">\u{1F5D1}</button>' +
-            '</div>' +
+          '<td>' + Table.actions([
+              Button.action('\u270f\uFE0F', { href: 'post-editor.html?edit=' + p.id, title: 'Edit' }),
+              Button.action(p.status === 'published' ? '\u{1F441}' : '\u{1F4E2}', {
+                extraClass: 'toggle-pub', dataId: p.id,
+                title: p.status === 'published' ? 'Unpublish' : 'Publish', ariaLabel: 'Toggle publish'
+              }),
+              Button.action('\u{1F5D1}', { extraClass: 'delete-post', dataId: p.id, danger: true, title: 'Delete' })
+            ]) +
           '</td>' +
         '</tr>';
       }).join('');
@@ -195,12 +197,13 @@
           var id = btn.getAttribute('data-id');
           var post = MOCK_POSTS.find(function (p) { return p.id === id; });
           if (!post) return;
-          if (!confirm('Delete "' + post.title + '"? This cannot be undone.')) return;
-          var idx = MOCK_POSTS.indexOf(post);
-          MOCK_POSTS.splice(idx, 1);
-          saveState();
-          dashToast('Post deleted.', 'success');
-          render();
+          Modal.confirm('Delete "' + post.title + '"? This cannot be undone.', function () {
+            var idx = MOCK_POSTS.indexOf(post);
+            MOCK_POSTS.splice(idx, 1);
+            saveState();
+            dashToast('Post deleted.', 'success');
+            render();
+          });
         });
       });
     }
@@ -393,6 +396,18 @@
 
     var modal = document.getElementById('cat-modal');
     var modalTitle = document.getElementById('cat-modal-title');
+    var modalBody = document.getElementById('cat-modal-body');
+
+    /* Modal fields built via FormGroup/InputField instead of hand-written
+       HTML (see README Section 5) — same classes/structure as before, so
+       there's no visual change, just one shared place to build a form field. */
+    if (modalBody) {
+      modalBody.innerHTML =
+        FormGroup.text('cat-name', { label: 'Name', required: true, placeholder: 'e.g. Classroom Tech' }) +
+        FormGroup.textarea('cat-desc', { label: 'Description', rows: 2, placeholder: 'A short description of this category\u2026' }) +
+        FormGroup.color('cat-color', { label: 'Color', value: '#4361ee' });
+    }
+
     var nameInput = document.getElementById('cat-name');
     var descInput = document.getElementById('cat-desc');
     var colorInput = document.getElementById('cat-color');
@@ -412,10 +427,10 @@
             '<p class="cat-desc">' + escapeHtml(c.description || '') + '</p>' +
           '</div>' +
           '<span class="cat-count">' + count + ' posts</span>' +
-          '<div class="table-actions">' +
-            '<button class="action-btn edit-cat" data-id="' + c.id + '" title="Edit" aria-label="Edit">\u270f\uFE0F</button>' +
-            '<button class="action-btn danger delete-cat" data-id="' + c.id + '" title="Delete" aria-label="Delete">\u{1F5D1}</button>' +
-          '</div>' +
+          Table.actions([
+            Button.action('\u270f\uFE0F', { extraClass: 'edit-cat', dataId: c.id, title: 'Edit' }),
+            Button.action('\u{1F5D1}', { extraClass: 'delete-cat', dataId: c.id, danger: true, title: 'Delete' })
+          ]) +
         '</div>';
       }).join('');
 
@@ -443,12 +458,13 @@
             dashToast('Cannot delete: ' + count + ' posts use this category.', 'error');
             return;
           }
-          if (!confirm('Delete "' + cat.name + '"?')) return;
-          var idx = MOCK_CATEGORIES.indexOf(cat);
-          MOCK_CATEGORIES.splice(idx, 1);
-          saveState();
-          dashToast('Category deleted.', 'success');
-          render();
+          Modal.confirm('Delete "' + cat.name + '"?', function () {
+            var idx = MOCK_CATEGORIES.indexOf(cat);
+            MOCK_CATEGORIES.splice(idx, 1);
+            saveState();
+            dashToast('Category deleted.', 'success');
+            render();
+          });
         });
       });
     }
@@ -540,12 +556,13 @@
           var id = btn.getAttribute('data-id');
           var item = MOCK_MEDIA.find(function (m) { return m.id === id; });
           if (!item) return;
-          if (!confirm('Delete "' + item.name + '"?')) return;
-          var idx = MOCK_MEDIA.indexOf(item);
-          MOCK_MEDIA.splice(idx, 1);
-          saveState();
-          dashToast('Image deleted.', 'success');
-          render();
+          Modal.confirm('Delete "' + item.name + '"?', function () {
+            var idx = MOCK_MEDIA.indexOf(item);
+            MOCK_MEDIA.splice(idx, 1);
+            saveState();
+            dashToast('Image deleted.', 'success');
+            render();
+          });
         });
       });
     }

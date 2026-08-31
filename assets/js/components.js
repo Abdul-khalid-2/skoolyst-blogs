@@ -37,3 +37,151 @@ var Card = {
     '</div>';
   }
 };
+
+var Button = {
+  /**
+   * Icon-only row-action button (edit / toggle-publish / delete, etc.).
+   * Previously the `class="action-btn ..." data-id="..." title="..." aria-label="..."`
+   * shape was hand-copied for every action, in both the posts table AND the
+   * categories list, inside dashboard.js. Renders as <a> when opts.href is
+   * given (e.g. the "Edit" link to post-editor.html), otherwise <button>.
+   */
+  action: function (icon, opts) {
+    opts = opts || {};
+    var cls = 'action-btn' + (opts.danger ? ' danger' : '') + (opts.extraClass ? ' ' + opts.extraClass : '');
+    var attrs = ' class="' + cls + '"' +
+      (opts.dataId !== undefined ? ' data-id="' + opts.dataId + '"' : '') +
+      ' title="' + escapeHtml(opts.title || '') + '"' +
+      ' aria-label="' + escapeHtml(opts.ariaLabel || opts.title || '') + '"';
+    if (opts.href) {
+      return '<a href="' + opts.href + '"' + attrs + '>' + icon + '</a>';
+    }
+    return '<button type="button"' + attrs + '>' + icon + '</button>';
+  }
+};
+
+var Table = {
+  /**
+   * Wraps a set of Button.action(...) strings in the standard
+   * `<div class="table-actions">...</div>` container. That wrapper was
+   * duplicated verbatim in the posts table row-builder AND the
+   * categories row-builder in dashboard.js.
+   */
+  actions: function (buttonsHtml) {
+    return '<div class="table-actions">' + buttonsHtml.join('') + '</div>';
+  }
+};
+
+var InputField = {
+  /** Matches the plain `<input type="text">` markup used in post-editor.html / cat-modal. */
+  text: function (id, opts) {
+    opts = opts || {};
+    return '<input type="text" id="' + id + '"' +
+      (opts.name ? ' name="' + opts.name + '"' : '') +
+      (opts.placeholder ? ' placeholder="' + escapeHtml(opts.placeholder) + '"' : '') +
+      (opts.value ? ' value="' + escapeHtml(opts.value) + '"' : '') + ' />';
+  },
+  textarea: function (id, opts) {
+    opts = opts || {};
+    return '<textarea id="' + id + '"' +
+      (opts.name ? ' name="' + opts.name + '"' : '') +
+      ' rows="' + (opts.rows || 2) + '"' +
+      (opts.placeholder ? ' placeholder="' + escapeHtml(opts.placeholder) + '"' : '') + '>' +
+      (opts.value ? escapeHtml(opts.value) : '') + '</textarea>';
+  },
+  color: function (id, opts) {
+    opts = opts || {};
+    return '<input type="color" id="' + id + '" value="' + (opts.value || '#4361ee') + '" />';
+  }
+};
+
+var FormGroup = {
+  /**
+   * label + input/textarea wrapper matching the `.form-group` markup already
+   * used (hand-written) in post-editor.html and, until this refactor, in
+   * categories.html's add/edit-category modal. Field-level helpers below
+   * (text/textarea/color) compose this with InputField so callers don't
+   * hand-roll the wrapper each time. Deliberately produces the exact same
+   * classes/structure as the old hand-written HTML — this is a markup-source
+   * change, not a visual one (there's no `.modal-box .form-group` CSS rule,
+   * only `.editor-form .form-group`, so styling is identical either way).
+   */
+  wrap: function (labelText, forId, inputHtml, opts) {
+    opts = opts || {};
+    return '<div class="form-group"' + (opts.style ? ' style="' + opts.style + '"' : '') + '>' +
+      '<label for="' + forId + '">' + escapeHtml(labelText) + (opts.required ? ' <span class="req">*</span>' : '') + '</label>' +
+      inputHtml +
+      (opts.hint ? '<div class="form-hint">' + escapeHtml(opts.hint) + '</div>' : '') +
+      '</div>';
+  },
+  text: function (id, opts) {
+    opts = opts || {};
+    return FormGroup.wrap(opts.label, id, InputField.text(id, opts), opts);
+  },
+  textarea: function (id, opts) {
+    opts = opts || {};
+    return FormGroup.wrap(opts.label, id, InputField.textarea(id, opts), opts);
+  },
+  color: function (id, opts) {
+    opts = opts || {};
+    return FormGroup.wrap(opts.label, id, InputField.color(id, opts), opts);
+  }
+};
+
+var Modal = {
+  /**
+   * Generic `.modal-overlay > .modal-box` shell (header/body/footer).
+   * Generalizes the markup that used to exist only once, hand-rolled, as
+   * categories.html's `#cat-modal` — so a *new* modal (like the confirm
+   * dialog below) doesn't need its own copy of `.modal-overlay`/`.modal-box`.
+   */
+  wrapper: function (id, titleText, bodyHtml, footerHtml) {
+    return '<div class="modal-overlay" id="' + id + '">' +
+      '<div class="modal-box">' +
+        '<div class="modal-header"><h3>' + escapeHtml(titleText) + '</h3>' +
+          '<button type="button" class="modal-close" data-modal-close aria-label="Close">\u2715</button></div>' +
+        '<div class="modal-body">' + bodyHtml + '</div>' +
+        '<div class="modal-footer">' + footerHtml + '</div>' +
+      '</div>' +
+    '</div>';
+  },
+
+  /**
+   * Custom confirm dialog built on Modal.wrapper(), replacing the browser's
+   * native `confirm()`. Previously each delete flow (posts, categories,
+   * media) called `window.confirm(...)` independently with its own message
+   * string; this gives them one shared, styled component instead. Injects
+   * itself into <body>, wires Cancel/close/backdrop-click/X, and removes
+   * itself from the DOM after any close.
+   */
+  confirm: function (message, onConfirm) {
+    var existing = document.getElementById('confirm-modal');
+    if (existing) existing.remove();
+    var html = Modal.wrapper(
+      'confirm-modal',
+      'Please Confirm',
+      '<p>' + escapeHtml(message) + '</p>',
+      '<button type="button" data-modal-close>Cancel</button>' +
+      '<button type="button" class="btn-primary-dash" id="confirm-modal-ok">Confirm</button>'
+    );
+    document.body.insertAdjacentHTML('beforeend', html);
+    var modal = document.getElementById('confirm-modal');
+
+    function close() { modal.remove(); }
+
+    modal.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+      btn.addEventListener('click', close);
+    });
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) close();
+    });
+    document.getElementById('confirm-modal-ok').addEventListener('click', function () {
+      close();
+      onConfirm();
+    });
+
+    /* class added on the next frame so the CSS animation (modalIn) plays,
+       same technique the existing cat-modal show/hide already relies on */
+    requestAnimationFrame(function () { modal.classList.add('show'); });
+  }
+};

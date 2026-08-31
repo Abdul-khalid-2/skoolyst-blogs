@@ -11,6 +11,11 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Auth module (Section 9) — login/logout/session
+- **What:** Built the Auth module: `AuthUser` DTO (never exposes `password_hash`), `AuthRepository` (`findByEmail`/`findById` against `blog_users`), `AuthMiddleware` (session-backed guard — `login()` regenerates the session ID to prevent fixation, `currentUser()`/`requireUser()`/`requireAdmin()` for other modules to call), and `AuthController` (`login`/`logout`/`me`). Added `core/Session.php` so the app boots its own uniquely-named session cookie (`blog_skoolyst_session`, isolated from `ads`/`teachers`). Wired `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` via a new `routes/api/auth.php` (the first module route file, following the pattern `routes/api.php` already pointed to).
+- **Where:** `core/Session.php`, `app/Auth/{Model,Repository,Middleware,Controller}.php`, `routes/api/auth.php`, `routes/api.php`, `index.php` (added `Session::start()` to the boot sequence).
+- **Why:** Auth had to come before Posts/Categories/Author/Admin per the development order — those all depend on `AuthMiddleware::requireUser()`/`requireAdmin()`. Live-tested end-to-end against a local MariaDB instance with a seeded admin + a seeded suspended user via PHP's built-in server: correct login sets a working session cookie and returns the user; wrong password and unknown email both return the same generic "Invalid email or password" (no user enumeration); a suspended account is rejected with 403 even with the right password; `/auth/me` correctly reflects logged-in/logged-out state; logout fully destroys the session; missing/invalid fields return a 422 with per-field errors. Never assumed correct from reading the code — actually ran every case.
+
 ### 2026-08-31 — Repo corruption fix + Section 5 regression close
 - **What:** An automated commit (`f70f4da`, "Initialize Auth module development") had overwritten `.gitignore` with AI commentary text instead of real ignore rules, and left a broken/orphaned git submodule link named `skoolyst-blogs` (gitlink with no `.gitmodules`, pointing at a commit inside this same repo) — no actual Auth module files were ever added despite the commit message claiming otherwise. Both fixed: `.gitignore` restored to real ignore rules (plus `vendor/`, `.env`, `public/uploads/*`), the phantom submodule entry removed. Also closed out Section 5's last item: re-verified all 11 pages (6 public + 5 dashboard) — script load order intact everywhere, all 4 JS files pass `node --check`, no leftover hand-written `.form-group` markup, `renderPostCard` correctly aliases `Card.post()` across all 4 call sites.
 - **Where:** `.gitignore`, removed path `skoolyst-blogs` (was tracked as a `160000` gitlink); verification touched all 11 page files (no code changes needed — all passed).
@@ -121,8 +126,9 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
   - **Where:** `database/migrations/0001–0010*.sql`, `bin/migrate.php`.
   - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
 - [x] Frontend component architecture — `Badge`, `Card` (including public post cards), `Button`, `Table`, `InputField`/`FormGroup`, and `Modal` all implemented and regression-verified across all 11 pages (Section 5)
-- [ ] `/api/v1/...` — health check only so far; real endpoints not started
-- [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
+- [x] Auth module + session-based authentication (Section 9/13) — `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` live and tested against `blog_users`
+- [ ] `/api/v1/...` — health check + auth endpoints live; Posts/Categories/Comments/Media endpoints not started
+- [ ] Dashboard is still unprotected (hardcoded "Sarah Chen" user) — Section 11 will wire the dashboard's own login screen to the new `/auth/*` endpoints
 
 ## 3. File Structure — Fixes Applied This Session
 
@@ -313,7 +319,7 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 **Admin:** full CRUD on `/admin/posts`, `/admin/comments`, `/admin/media`, `/admin/categories`
 
 - [ ] Public API implemented
-- [ ] Auth API implemented
+- [x] Auth API implemented
 - [ ] Author API implemented
 - [ ] Admin API implemented
 
@@ -328,13 +334,13 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 - [ ] Categories module
 - [ ] Comments module
 - [ ] Media module
-- [ ] Auth module
+- [x] Auth module — `app/Auth/{Model,Repository,Middleware,Controller}.php`; `AuthMiddleware::requireUser()`/`::requireAdmin()` ready for Author/Admin modules to call
 
 ## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
-- [ ] Module route files (`routes/api/posts.php` etc.) — added as each module in Section 9 is built
-- [ ] Auth + admin middleware applied to routes (depends on Section 13)
+- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php` added; others added as each module in Section 9 is built
+- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me`; Posts/Categories/Comments/Media routes will apply it once built
 
 ## 11. Frontend → API Integration (not started)
 
@@ -352,10 +358,10 @@ Keep existing HTML/CSS; replace mock-data calls with real fetches.
 - [ ] Switch frontend off `mock-data.js`
 - [ ] Remove `mock-data.js` only after API migration is verified
 
-## 13. Auth & Security (not started)
-- [ ] Password hashing, login/logout, session regeneration
-- [ ] Unique blog session name (no conflicts with other Skoolyst apps)
-- [ ] Author ownership checks, admin authorization
+## 13. Auth & Security (in progress)
+- [x] Password hashing, login/logout, session regeneration — `password_hash`/`password_verify`, `AuthMiddleware::login()` regenerates the session ID on login, `Session::destroy()` on logout
+- [x] Unique blog session name (no conflicts with other Skoolyst apps) — `config('app.session_name')` = `blog_skoolyst_session`, applied via `core/Session.php`
+- [ ] Author ownership checks, admin authorization — `AuthMiddleware::requireAdmin()` exists and is tested; per-resource ownership checks land with the Posts module
 - [ ] Input validation, prepared statements, upload MIME/size limits
 - [ ] API rate limiting, comment spam protection, admin action audit log
 

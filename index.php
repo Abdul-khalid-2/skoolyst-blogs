@@ -14,9 +14,11 @@ require __DIR__ . '/core/Request.php';
 require __DIR__ . '/core/Response.php';
 require __DIR__ . '/core/Validator.php';
 require __DIR__ . '/core/Router.php';
+require __DIR__ . '/core/Session.php';
 
 Env::load(__DIR__ . '/.env');
 Config::init(__DIR__ . '/config');
+Session::start();
 
 $isDebug = Env::get('APP_DEBUG', false) === true;
 error_reporting($isDebug ? E_ALL : 0);

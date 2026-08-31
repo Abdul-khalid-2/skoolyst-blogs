@@ -18,9 +18,10 @@ $router->get('/health', function (Request $request) {
     ]);
 });
 
-// Module route files will be required here as they're built, e.g.:
+require __DIR__ . '/api/auth.php';
+
+// Remaining module route files will be required here as they're built:
 // require __DIR__ . '/api/posts.php';
 // require __DIR__ . '/api/categories.php';
 // require __DIR__ . '/api/comments.php';
 // require __DIR__ . '/api/media.php';
-// require __DIR__ . '/api/auth.php';

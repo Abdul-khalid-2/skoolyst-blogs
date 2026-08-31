@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skoolyst Blog \u2014 Ideas for Modern Educators</title>
-  <meta name="description" content="The Skoolyst blog covers teaching strategies, edtech, student success, online learning, and education policy for modern educators." />
+  <title>Contact \u2014 Skoolyst Blog</title>
+  <meta name="description" content="Get in touch with the Skoolyst blog team." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
-  <meta property="og:image" content="https://bolt.new/static/og_default.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body>
   <nav class="site-nav" aria-label="Main navigation">
@@ -24,50 +21,66 @@
         <span aria-hidden="true">\u2630</span>
       </button>
       <ul class="nav-links">
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html">Home</a></li>
         <li><a href="blog.html">Blog</a></li>
         <li><a href="about.html">About</a></li>
-        <li><a href="contact.html">Contact</a></li>
+        <li><a href="contact.html" class="active">Contact</a></li>
         <li><a href="dashboard/index.html" class="nav-cta">Dashboard</a></li>
       </ul>
     </div>
   </nav>
 
-  <header class="hero">
-    <span class="hero-eyebrow">Skoolyst Blog</span>
-    <h1>Ideas, strategies, and stories for modern educators</h1>
-    <p class="hero-sub">Research-backed insights on teaching, edtech, student success, and the future of learning.</p>
-    <form class="hero-search" role="search">
-      <label for="hero-search-input" class="visually-hidden">Search posts</label>
-      <input type="search" id="hero-search-input" placeholder="Search articles\u2026" />
-      <button type="submit">Search</button>
-    </form>
-  </header>
-
-  <section class="section">
-    <div class="section-header">
-      <h2>Featured Post</h2>
+  <div class="contact-wrap">
+    <div class="contact-info">
+      <h2>Get in touch</h2>
+      <p>Have a question, a story idea, or feedback? We\u2019d love to hear from you. Fill out the form and we\u2019ll get back to you as soon as we can.</p>
+      <div class="info-item">
+        <div class="info-icon" aria-hidden="true">\u2709</div>
+        <div>
+          <div class="info-label">Email</div>
+          <div class="info-value">blog@skoolyst.com</div>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon" aria-hidden="true">\u{1F4CD}</div>
+        <div>
+          <div class="info-label">Address</div>
+          <div class="info-value">123 Education Way, Suite 200, San Francisco, CA</div>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon" aria-hidden="true">\u23F0</div>
+        <div>
+          <div class="info-label">Response Time</div>
+          <div class="info-value">Within 2\u20133 business days</div>
+        </div>
+      </div>
     </div>
-    <div id="featured-posts" class="post-grid"></div>
-  </section>
 
-  <section class="section">
-    <div class="section-header">
-      <h2>Latest Articles</h2>
-      <a href="blog.html">View all \u2192</a>
-    </div>
-    <div id="latest-posts" class="post-grid"></div>
-  </section>
-
-  <section class="newsletter">
-    <h2>Never miss an article</h2>
-    <p>Get the latest on teaching, edtech, and student success delivered to your inbox.</p>
-    <form>
-      <label for="newsletter-email" class="visually-hidden">Email address</label>
-      <input type="email" id="newsletter-email" placeholder="you@example.com" required />
-      <button type="submit">Subscribe</button>
+    <form class="contact-form" id="contact-form-el" novalidate>
+      <div class="form-group">
+        <label for="contact-name">Name <span style="color:var(--error)">*</span></label>
+        <input type="text" id="contact-name" name="name" required />
+        <div class="form-error" data-error="name"></div>
+      </div>
+      <div class="form-group">
+        <label for="contact-email">Email <span style="color:var(--error)">*</span></label>
+        <input type="email" id="contact-email" name="email" required />
+        <div class="form-error" data-error="email"></div>
+      </div>
+      <div class="form-group">
+        <label for="contact-subject">Subject</label>
+        <input type="text" id="contact-subject" name="subject" />
+      </div>
+      <div class="form-group">
+        <label for="contact-message">Message <span style="color:var(--error)">*</span></label>
+        <textarea id="contact-message" name="message" required></textarea>
+        <div class="form-error" data-error="message"></div>
+      </div>
+      <button type="submit">Send Message</button>
+      <p class="form-note">This is a demo form \u2014 no message is actually sent.</p>
     </form>
-  </section>
+  </div>
 
   <footer class="site-footer">
     <div class="footer-inner">

@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skoolyst Blog \u2014 Ideas for Modern Educators</title>
-  <meta name="description" content="The Skoolyst blog covers teaching strategies, edtech, student success, online learning, and education policy for modern educators." />
+  <title>Category \u2014 Skoolyst Blog</title>
+  <meta name="description" content="Browse posts by category on the Skoolyst blog." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
-  <meta property="og:image" content="https://bolt.new/static/og_default.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body>
   <nav class="site-nav" aria-label="Main navigation">
@@ -24,7 +21,7 @@
         <span aria-hidden="true">\u2630</span>
       </button>
       <ul class="nav-links">
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html">Home</a></li>
         <li><a href="blog.html">Blog</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="contact.html">Contact</a></li>
@@ -33,40 +30,13 @@
     </div>
   </nav>
 
-  <header class="hero">
-    <span class="hero-eyebrow">Skoolyst Blog</span>
-    <h1>Ideas, strategies, and stories for modern educators</h1>
-    <p class="hero-sub">Research-backed insights on teaching, edtech, student success, and the future of learning.</p>
-    <form class="hero-search" role="search">
-      <label for="hero-search-input" class="visually-hidden">Search posts</label>
-      <input type="search" id="hero-search-input" placeholder="Search articles\u2026" />
-      <button type="submit">Search</button>
-    </form>
+  <header class="archive-header">
+    <h1 id="category-title">Category</h1>
+    <p id="category-desc"></p>
   </header>
 
   <section class="section">
-    <div class="section-header">
-      <h2>Featured Post</h2>
-    </div>
-    <div id="featured-posts" class="post-grid"></div>
-  </section>
-
-  <section class="section">
-    <div class="section-header">
-      <h2>Latest Articles</h2>
-      <a href="blog.html">View all \u2192</a>
-    </div>
-    <div id="latest-posts" class="post-grid"></div>
-  </section>
-
-  <section class="newsletter">
-    <h2>Never miss an article</h2>
-    <p>Get the latest on teaching, edtech, and student success delivered to your inbox.</p>
-    <form>
-      <label for="newsletter-email" class="visually-hidden">Email address</label>
-      <input type="email" id="newsletter-email" placeholder="you@example.com" required />
-      <button type="submit">Subscribe</button>
-    </form>
+    <div id="category-posts" class="post-grid"></div>
   </section>
 
   <footer class="site-footer">

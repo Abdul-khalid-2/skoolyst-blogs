@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skoolyst Blog \u2014 Ideas for Modern Educators</title>
-  <meta name="description" content="The Skoolyst blog covers teaching strategies, edtech, student success, online learning, and education policy for modern educators." />
+  <title>All Articles \u2014 Skoolyst Blog</title>
+  <meta name="description" content="Browse all articles on the Skoolyst blog. Filter by category, search by keyword, and sort by date or popularity." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
-  <meta property="og:image" content="https://bolt.new/static/og_default.png">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body>
   <nav class="site-nav" aria-label="Main navigation">
@@ -24,8 +21,8 @@
         <span aria-hidden="true">\u2630</span>
       </button>
       <ul class="nav-links">
-        <li><a href="index.html" class="active">Home</a></li>
-        <li><a href="blog.html">Blog</a></li>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="blog.html" class="active">Blog</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="contact.html">Contact</a></li>
         <li><a href="dashboard/index.html" class="nav-cta">Dashboard</a></li>
@@ -33,40 +30,34 @@
     </div>
   </nav>
 
-  <header class="hero">
-    <span class="hero-eyebrow">Skoolyst Blog</span>
-    <h1>Ideas, strategies, and stories for modern educators</h1>
-    <p class="hero-sub">Research-backed insights on teaching, edtech, student success, and the future of learning.</p>
-    <form class="hero-search" role="search">
-      <label for="hero-search-input" class="visually-hidden">Search posts</label>
-      <input type="search" id="hero-search-input" placeholder="Search articles\u2026" />
-      <button type="submit">Search</button>
-    </form>
+  <header class="archive-header">
+    <h1>All Articles</h1>
+    <p>Explore every post on the Skoolyst blog</p>
   </header>
 
-  <section class="section">
-    <div class="section-header">
-      <h2>Featured Post</h2>
+  <div class="filter-bar">
+    <div class="search-box">
+      <span class="search-icon" aria-hidden="true">\u{1F50D}</span>
+      <label for="blog-search" class="visually-hidden">Search posts</label>
+      <input type="search" id="blog-search" placeholder="Search by title\u2026" />
     </div>
-    <div id="featured-posts" class="post-grid"></div>
-  </section>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <label for="blog-category" class="visually-hidden">Filter by category</label>
+      <select id="blog-category">
+        <option value="">All categories</option>
+      </select>
+      <label for="blog-sort" class="visually-hidden">Sort posts</label>
+      <select id="blog-sort">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="views">Most viewed</option>
+      </select>
+    </div>
+  </div>
 
   <section class="section">
-    <div class="section-header">
-      <h2>Latest Articles</h2>
-      <a href="blog.html">View all \u2192</a>
-    </div>
-    <div id="latest-posts" class="post-grid"></div>
-  </section>
-
-  <section class="newsletter">
-    <h2>Never miss an article</h2>
-    <p>Get the latest on teaching, edtech, and student success delivered to your inbox.</p>
-    <form>
-      <label for="newsletter-email" class="visually-hidden">Email address</label>
-      <input type="email" id="newsletter-email" placeholder="you@example.com" required />
-      <button type="submit">Subscribe</button>
-    </form>
+    <div id="blog-posts" class="post-grid"></div>
+    <div id="blog-pagination" class="pagination"></div>
   </section>
 
   <footer class="site-footer">
@@ -117,5 +108,19 @@
   <script src="assets/js/mock-data.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/app.js"></script>
+  <script>
+    /* Populate category filter */
+    document.addEventListener('DOMContentLoaded', function () {
+      var sel = document.getElementById('blog-category');
+      if (sel) {
+        MOCK_CATEGORIES.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          sel.appendChild(opt);
+        });
+      }
+    });
+  </script>
 </body>
 </html>

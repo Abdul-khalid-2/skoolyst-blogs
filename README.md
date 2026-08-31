@@ -318,10 +318,10 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 
 **Admin:** full CRUD on `/admin/posts`, `/admin/comments`, `/admin/media`, `/admin/categories`
 
-- [ ] Public API implemented
+- [ ] Public API implemented — Posts + Categories done; Comments (`POST /posts/{id}/comments`) pending its own module
 - [x] Auth API implemented
-- [ ] Author API implemented
-- [ ] Admin API implemented
+- [ ] Author API implemented — Posts done (`/author/posts`); image upload (`POST /author/posts/{id}/image`) pending Media module
+- [ ] Admin API implemented — Posts + Categories done; Comments + Media pending
 
 ## 9. Application Modules (in progress)
 
@@ -330,7 +330,11 @@ app/{Posts,Categories,Comments,Media,Auth}/
 ```
 Each module: Controller, Repository, Model, Validator (where needed), Routes, auth/authorization, error handling, tests. Don't create classes a module doesn't need.
 
-- [ ] Posts module
+- [x] Posts module — `app/Posts/{Model,Repository,Controller}.php`, `routes/api/posts.php`
+  - **What:** Public `GET /posts` (published-only, paginated, `category` slug + `search` filters) and `GET /posts/{id}`, plus `POST /posts/{id}/view` (anonymous view-count increment). `GET/POST /author/posts` + `PATCH`/`DELETE /author/posts/{id}` are the logged-in author's own posts only — editing/deleting someone else's post returns 403. `/admin/posts` mirrors the same shape but for any post/author, and can reassign `author_id`. Every response is enriched with joined author name + category name/slug/color so the frontend never needs a second lookup (same reasoning as Categories' `post_count` join). Slugs auto-generate and de-dupe via the shared `Str::slugify()`; `published_date` is stamped once on first publish and never reset by later draft/publish toggles; delete is a soft-delete (`deleted_at`).
+  - **Where:** `app/Posts/*.php`, `routes/api/posts.php`, required from `routes/api.php` after `categories.php` (Posts validates `category_id` against `CategoryRepository` and `author_id` against `AuthRepository`).
+  - **Why:** Posts is the core content type everything else (Comments, Media, public site) hangs off of — built right after Categories since it needed a real category to validate against, and reuses the same admin-guard/slug patterns instead of inventing new ones.
+  - **Tested:** Live tested (local MariaDB + PHP built-in server), 22 cases: public list/show only ever return published posts (draft correctly 404s/hidden even right after being created), author create draft → edit → re-slug on rename, ownership enforced both ways (author blocked 403 from another author's post, admin unrestricted), admin `status` filter and pagination (`per_page`/`page`/`total_pages`), view-count increments and 404s for a bad id, validation 422s for missing title/body/status, invalid `status` enum, and a non-existent `category_id`/`author_id`, and admin creating a post on another user's behalf via `author_id`.
 - [x] Categories module — `app/Categories/{Model,Repository,Controller}.php`, `routes/api/categories.php`
   - **What:** `GET /categories` (list, with a `post_count` per category) and `GET /categories/{slug}` are public; `POST /admin/categories` and `PATCH`/`DELETE /admin/categories/{id}` require an admin session via `AuthMiddleware::requireAdmin()` — matching Section 8's documented public-vs-admin path split. Create/update auto-generate a unique slug from the name (`core/Str::slugify()`, de-duplicated as `name-2`, `name-3`, ...) and only re-slug on update if the name actually changed. Delete is blocked with a 409 if any non-deleted post still references the category (`CategoryRepository::countPostsUsing()`), mirroring the same guard `dashboard.js`'s mock version already had.
   - **Where:** `app/Categories/*.php`, `core/Str.php` (new, shared slugify — `Posts` module will reuse it), `routes/api/categories.php`, required from `routes/api.php`.
@@ -343,8 +347,8 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 ## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
-- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php` and `routes/api/categories.php` added; others added as each module in Section 9 is built
-- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me` and all of `/admin/categories/*`; Posts/Comments/Media routes will apply it once built
+- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php`, `routes/api/categories.php`, `routes/api/posts.php` added; others added as each module in Section 9 is built
+- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me`, all of `/admin/categories/*`, and Posts' `/author/*`+`/admin/*` routes; Comments/Media routes will apply it once built
 
 ## 11. Frontend → API Integration (not started)
 

@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# PHP backend
+.env
+vendor/
+public/uploads/media/*
+!public/uploads/media/.gitkeep

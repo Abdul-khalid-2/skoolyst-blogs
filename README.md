@@ -33,9 +33,9 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
 - [x] Frontend HTML/CSS scaffold complete
 - [x] Mock data layer (`assets/js/mock-data.js`) driving all pages
 - [x] Dashboard CRUD interactions work against mock data + `localStorage`
-- [ ] PHP backend — not started
+- [x] PHP backend core + config + routing skeleton (Sections 5 & 9) — see below
 - [ ] Database (`blog_*` tables) — not started
-- [ ] `/api/v1/...` — not started
+- [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
 ## 3. File Structure — Fixes Applied This Session
@@ -70,6 +70,14 @@ dashboard/
 assets/
 ├── css/ (style.css, dashboard.css)
 └── js/  (app.js, dashboard.js, mock-data.js)
+
+core/    (Env, Config, Database, Request, Response, Validator, Router)
+config/  (app.php, database.php)
+routes/  (api.php)
+public/uploads/media/   (empty, gitignored except .gitkeep)
+index.php   (API front controller)
+.htaccess   (routes /api/v1/* to index.php)
+.env.example
 ```
 
 - [ ] Verify public homepage, blog archive, single post, category, about, contact pages
@@ -79,17 +87,27 @@ assets/
 
 ---
 
-## 5. Backend Foundation (not started)
+## 5. Backend Foundation
 
 ### Core
-- [ ] `core/` — Request, Response, Database, Config loader, Validator
-- [ ] Auth middleware, authorization middleware
+- [x] `core/Env.php` — dependency-free `.env` loader
+- [x] `core/Config.php` — dot-notation config reader over `config/*.php`
+- [x] `core/Database.php` — PDO singleton + `select`/`selectOne`/`execute` helpers (never touches non-`blog_*` tables)
+- [x] `core/Request.php` — method, path, query, JSON/form body, headers, bearer token
+- [x] `core/Response.php` — uniform JSON success/error responses
+- [x] `core/Validator.php` — `required|email|max|min|in|numeric` rule engine
+- [x] `core/Router.php` — path-param routing (`{id}`), 404/405 handling
+- [x] `index.php` — front controller, wires everything above, dispatches `/api/v1/*`
+- [ ] Auth middleware, authorization middleware (needs `blog_users`/sessions — Section 6/12)
 - [ ] CSRF protection, rate limiter, upload handler, audit log helper
-- [ ] Centralized error handling → JSON error responses
+- [x] Centralized error handling → JSON error responses (`set_exception_handler` in `index.php`)
 
 ### Configuration
-- [ ] `.env`, `config/app.php`, `config/database.php`
-- [ ] App URL, DB connection, session name, upload paths, API settings
+- [x] `.env.example` committed (`.env` itself gitignored); `config/app.php`, `config/database.php`
+- [x] App URL, session name, upload path/size/mime settings, DB connection settings
+- [x] `.htaccess` — routes `/api/v1/*` to `index.php`, leaves static frontend untouched, blocks direct `.env` access
+
+**Verified:** `php -l` clean on all new files; smoke-tested with PHP's built-in server — `GET /api/v1/health` → 200 with app name + timestamp, unknown `/api/v1/*` route → 404 JSON, non-API path → 404 JSON (never reaches the router). No live MySQL yet, so DB-touching endpoints are still untested — that starts with Section 6.
 
 ## 6. Database (not started)
 
@@ -140,9 +158,11 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 - [ ] Media module
 - [ ] Auth module
 
-## 9. Routing (not started)
-- [ ] `routes/api.php`, module route loading, `/api/v1` prefix
-- [ ] Auth + admin middleware, method validation, JSON 404/405
+## 9. Routing
+- [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
+- [x] Method validation (405) + JSON 404 for unmatched routes
+- [ ] Module route files (`routes/api/posts.php` etc.) — added as each module in Section 8 is built
+- [ ] Auth + admin middleware applied to routes (depends on Section 12)
 
 ## 10. Frontend → API Integration (not started)
 

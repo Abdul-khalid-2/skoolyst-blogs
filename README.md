@@ -318,10 +318,10 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 
 **Admin:** full CRUD on `/admin/posts`, `/admin/comments`, `/admin/media`, `/admin/categories`
 
-- [ ] Public API implemented — Posts + Categories done; Comments (`POST /posts/{id}/comments`) pending its own module
+- [ ] Public API implemented — Posts + Categories + Comments (submit) done; nothing else pending here
 - [x] Auth API implemented
 - [ ] Author API implemented — Posts done (`/author/posts`); image upload (`POST /author/posts/{id}/image`) pending Media module
-- [ ] Admin API implemented — Posts + Categories done; Comments + Media pending
+- [ ] Admin API implemented — Posts + Categories + Comments done; Media pending
 
 ## 9. Application Modules (in progress)
 
@@ -340,15 +340,19 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
   - **Where:** `app/Categories/*.php`, `core/Str.php` (new, shared slugify — `Posts` module will reuse it), `routes/api/categories.php`, required from `routes/api.php`.
   - **Why:** Categories has no dependents yet (Posts isn't built), so it's the simplest real module to stand up next after Auth, and it establishes the slug + admin-guard patterns Posts will reuse.
   - **Tested:** Live tested (local MariaDB + PHP built-in server) — public list/show work logged-out; create/update/delete return 401 logged-out and 403 for a logged-in non-admin; admin create/update succeed with slug de-dup and hex-color validation (422 on bad input); delete returns 409 with the post count for a category still in use, and succeeds for one with zero posts; 404s return correctly for unknown id/slug.
-- [ ] Comments module
+- [x] Comments module — `app/Comments/{Model,Repository,Controller}.php`, `routes/api/comments.php`
+  - **What:** `POST /posts/{id}/comments` is public — validates name/email/body, 404s on an unpublished/missing post, always saves as `pending`, and blocks an obvious double-submit (same email+post within 30s → 429) as a stand-in until Section 6's real rate limiter exists. There's no separate `GET` comments route — Section 8 never listed one — so approved comments are embedded as a `comments` array inside `PostController::show()`'s response instead (public shape omits `author_email`; only the admin moderation shape includes it). `GET/PATCH/DELETE /admin/comments` give admins a paginated, status-filterable moderation queue.
+  - **Where:** `app/Comments/*.php`, `routes/api/comments.php`, required from `routes/api.php` after `posts.php` (`PostController::show()` calls `CommentRepository::approvedForPost()`).
+  - **Why:** Comments only makes sense once Posts exists to attach to; embedding into the post response instead of inventing an undocumented list endpoint keeps the API surface matching what Section 8 actually specified.
+  - **Tested:** Live tested — a fresh post's `comments` array is empty; a submitted comment stays invisible in that array until an admin approves it, then appears (without `author_email`); resubmitting the same email on the same post within 30s returns 429; commenting on a missing/draft post 404s; missing/invalid fields 422; `/admin/comments` correctly 401s logged-out and 403s a non-admin; approve/spam/delete and the `status` filter all work; an unknown comment id 404s and an invalid `status` value 422s.
 - [ ] Media module
 - [x] Auth module — `app/Auth/{Model,Repository,Middleware,Controller}.php`; `AuthMiddleware::requireUser()`/`::requireAdmin()` ready for Author/Admin modules to call
 
 ## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
-- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php`, `routes/api/categories.php`, `routes/api/posts.php` added; others added as each module in Section 9 is built
-- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me`, all of `/admin/categories/*`, and Posts' `/author/*`+`/admin/*` routes; Comments/Media routes will apply it once built
+- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php`, `routes/api/categories.php`, `routes/api/posts.php`, `routes/api/comments.php` added; only `media.php` left
+- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me`, `/admin/categories/*`, Posts' `/author/*`+`/admin/*`, and `/admin/comments/*`; Media routes will apply it once built
 
 ## 11. Frontend → API Integration (not started)
 

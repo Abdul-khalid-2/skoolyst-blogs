@@ -39,7 +39,13 @@ class PostController
             return;
         }
 
-        Response::success(Post::fromRow($row)->toArray());
+        $data = Post::fromRow($row)->toArray();
+        $data['comments'] = array_map(
+            fn (array $c) => Comment::fromRow($c)->toArray(),
+            CommentRepository::approvedForPost((int) $args['id'])
+        );
+
+        Response::success($data);
     }
 
     /** No auth required — anonymous readers trigger this once per page view. */

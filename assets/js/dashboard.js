@@ -239,6 +239,8 @@
     var form = document.getElementById('post-editor-form');
     if (!form) return;
 
+    renderPostEditorFields();
+
     var params = new URLSearchParams(window.location.search);
     var editId = params.get('edit');
     var editing = editId ? MOCK_POSTS.find(function (p) { return p.id === editId; }) : null;
@@ -378,6 +380,47 @@
       cancelBtn.addEventListener('click', function () {
         window.location.href = 'posts.html';
       });
+    }
+  }
+
+  /* Build the post-editor controls from the shared form components. Keeping
+     the editor's existing IDs, names, classes, and wrapper structure means
+     its CSS and save/edit behaviour remain unchanged. */
+  function renderPostEditorFields() {
+    var content = document.getElementById('editor-content-fields');
+    var seo = document.getElementById('editor-seo-fields');
+    var status = document.getElementById('editor-status-field');
+    var category = document.getElementById('editor-category-field');
+    var tags = document.getElementById('editor-tags-field');
+    var cover = document.getElementById('editor-cover-field');
+
+    if (content) {
+      content.innerHTML =
+        FormGroup.text('post-title', { label: 'Title', name: 'title', placeholder: 'Enter post title\u2026', required: true }) +
+        FormGroup.wrap('Slug', 'post-slug',
+          '<div class="slug-row">' + InputField.text('post-slug', { name: 'slug', placeholder: 'auto-generated-slug' }) +
+          '<button type="button" id="regen-slug">Regenerate</button></div>',
+          { required: true, hint: 'The URL-friendly version of the title.' }) +
+        FormGroup.textarea('post-excerpt', { label: 'Excerpt', name: 'excerpt', rows: 2, placeholder: 'A short summary shown in post cards\u2026' }) +
+        FormGroup.textarea('post-body', { label: 'Body', name: 'body', className: 'body-area', placeholder: 'Write your post here. Use ## for subheadings.\n\nParagraphs are separated by blank lines.', required: true, hint: 'Supports ## subheadings and blank-line paragraph breaks. No rich formatting in this demo.' });
+    }
+    if (seo) {
+      seo.innerHTML =
+        FormGroup.text('seo-title', { label: 'SEO Title', name: 'seo-title', placeholder: 'Title for search engines\u2026' }) +
+        FormGroup.textarea('seo-desc', { label: 'SEO Description', name: 'seo-desc', rows: 2, placeholder: 'Meta description for search results\u2026' });
+    }
+    if (status) {
+      status.innerHTML = FormGroup.radio('post-status', {
+        label: 'Status', style: 'margin:0',
+        radiosHtml: InputField.radio('status', 'draft', 'Draft', { checked: true }) + InputField.radio('status', 'published', 'Publish')
+      });
+    }
+    if (category) category.innerHTML = FormGroup.select('post-category', { label: 'Category', labelClass: 'visually-hidden', name: 'category', style: 'margin:0' });
+    if (tags) tags.innerHTML = FormGroup.text('post-tags', { label: 'Tags', labelClass: 'visually-hidden', name: 'tags', placeholder: 'comma, separated, tags', hint: 'Separate tags with commas.', style: 'margin:0' });
+    if (cover) {
+      cover.innerHTML = '<div class="cover-upload" id="cover-upload"><div class="upload-icon" aria-hidden="true">\u{1F4F7}</div>' +
+        '<div class="upload-text">Click to upload or drag a file</div>' + InputField.file('cover-input', { accept: 'image/*', style: 'display:none' }) +
+        '</div>';
     }
   }
 

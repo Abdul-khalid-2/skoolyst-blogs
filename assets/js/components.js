@@ -35,6 +35,46 @@ var Card = {
       '<div class="stat-value">' + value + '</div>' +
       (trend ? '<div class="stat-trend ' + (isUp ? 'up' : '') + '">' + trend + ' vs last month</div>' : '') +
     '</div>';
+  },
+
+  /**
+   * Public blog post card. Returns an element rather than an HTML string so
+   * callers can append it directly to a post grid. This lived in app.js
+   * originally, even though the same card is used by the home, archive,
+   * category, and related-post sections; keeping it here gives every card
+   * type one shared home.
+   */
+  post: function (post) {
+    var cat = getCategoryById(post.category);
+    var author = getAuthorById(post.author);
+    var safeTitle = escapeHtml(post.title);
+    var safeExcerpt = escapeHtml(post.excerpt);
+    var safeAuthor = escapeHtml(author.name);
+    var safeCat = escapeHtml(cat.name);
+    var safeDate = escapeHtml(formatDate(post.publishedDate));
+
+    var card = document.createElement('article');
+    card.className = 'post-card';
+    card.innerHTML =
+      '<div class="card-cover">' +
+        '<a href="post.html?id=' + encodeURIComponent(post.slug) + '">' +
+          '<img src="' + post.coverImage + '" alt="' + safeTitle + '" loading="lazy" />' +
+        '</a>' +
+      '</div>' +
+      '<div class="card-body">' +
+        '<span class="card-chip" style="background:' + cat.color + '15;color:' + cat.color + '">' + safeCat + '</span>' +
+        '<h3 class="card-title"><a href="post.html?id=' + encodeURIComponent(post.slug) + '">' + safeTitle + '</a></h3>' +
+        '<p class="card-excerpt">' + safeExcerpt + '</p>' +
+        '<div class="card-meta">' +
+          '<img src="' + author.avatar + '" alt="' + safeAuthor + '" loading="lazy" />' +
+          '<span>' + safeAuthor + '</span>' +
+          '<span class="meta-dot"></span>' +
+          '<span>' + safeDate + '</span>' +
+          '<span class="meta-dot"></span>' +
+          '<span>' + post.readTimeMinutes + ' min read</span>' +
+        '</div>' +
+      '</div>';
+    return card;
   }
 };
 

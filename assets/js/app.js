@@ -37,45 +37,12 @@
     }, 3000);
   };
 
-  /* ---- Render a single post card ---- */
-  function renderPostCard(post) {
-    var cat = getCategoryById(post.category);
-    var author = getAuthorById(post.author);
-    var safeTitle = escapeHtml(post.title);
-    var safeExcerpt = escapeHtml(post.excerpt);
-    var safeAuthor = escapeHtml(author.name);
-    var safeCat = escapeHtml(cat.name);
-    var safeDate = escapeHtml(formatDate(post.publishedDate));
-
-    var card = document.createElement('article');
-    card.className = 'post-card';
-    card.innerHTML =
-      '<div class="card-cover">' +
-        '<a href="post.html?id=' + encodeURIComponent(post.slug) + '">' +
-          '<img src="' + post.coverImage + '" alt="' + safeTitle + '" loading="lazy" />' +
-        '</a>' +
-      '</div>' +
-      '<div class="card-body">' +
-        '<span class="card-chip" style="background:' + cat.color + '15;color:' + cat.color + '">' + safeCat + '</span>' +
-        '<h3 class="card-title"><a href="post.html?id=' + encodeURIComponent(post.slug) + '">' + safeTitle + '</a></h3>' +
-        '<p class="card-excerpt">' + safeExcerpt + '</p>' +
-        '<div class="card-meta">' +
-          '<img src="' + author.avatar + '" alt="' + safeAuthor + '" loading="lazy" />' +
-          '<span>' + safeAuthor + '</span>' +
-          '<span class="meta-dot"></span>' +
-          '<span>' + safeDate + '</span>' +
-          '<span class="meta-dot"></span>' +
-          '<span>' + post.readTimeMinutes + ' min read</span>' +
-        '</div>' +
-      '</div>';
-    return card;
-  }
-
-  window.renderPostCard = renderPostCard;
+  /* Backwards-compatible public alias for the shared post-card component. */
+  window.renderPostCard = Card.post;
 
   /* ---- Render featured (large) card ---- */
   function renderFeaturedCard(post) {
-    var card = renderPostCard(post);
+    var card = Card.post(post);
     card.classList.add('featured');
     return card;
   }
@@ -93,7 +60,7 @@
     }
     if (latestContainer) {
       var latest = published.slice(1, 7);
-      latest.forEach(function (p) { latestContainer.appendChild(renderPostCard(p)); });
+      latest.forEach(function (p) { latestContainer.appendChild(Card.post(p)); });
     }
   }
 
@@ -142,7 +109,7 @@
       if (pagePosts.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u{1F50D}</div><h3>No posts found</h3><p>Try a different search or filter.</p></div>';
       } else {
-        pagePosts.forEach(function (p) { container.appendChild(renderPostCard(p)); });
+        pagePosts.forEach(function (p) { container.appendChild(Card.post(p)); });
       }
 
       renderPagination(totalPages);
@@ -238,7 +205,7 @@
     if (posts.length === 0) {
       container.innerHTML = '<div class="empty-state"><h3>No posts yet</h3><p>There are no published posts in this category.</p></div>';
     } else {
-      posts.forEach(function (p) { container.appendChild(renderPostCard(p)); });
+      posts.forEach(function (p) { container.appendChild(Card.post(p)); });
     }
   }
 
@@ -312,7 +279,7 @@
     if (related.length > 0) {
       var grid = document.createElement('div');
       grid.className = 'post-grid';
-      related.forEach(function (p) { grid.appendChild(renderPostCard(p)); });
+      related.forEach(function (p) { grid.appendChild(Card.post(p)); });
       relatedEl.appendChild(grid);
     } else {
       relatedEl.style.display = 'none';

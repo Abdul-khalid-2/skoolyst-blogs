@@ -11,6 +11,11 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Frontend component: public post card (Section 5)
+- **What:** Moved the public site's reusable post-card builder from `app.js` into `Card.post(post)` in the shared components file. Updated all home, archive, category, featured, and related-post rendering paths to call that component; retained `window.renderPostCard` as an alias to avoid breaking any existing external caller.
+- **Where:** `assets/js/components.js` and `assets/js/app.js`.
+- **Why:** The same markup was already reused throughout the public site, but its implementation lived in the page-behaviour file. Putting it alongside the other card components gives the public card one authoritative implementation while preserving the exact element type, classes, attributes, and markup output.
+
 ### 2026-08-31 — Section 3 scaffold cleanup decisions
 - **What:** Removed `.bolt/config.json` (dead Vite template marker, unused). Decided to keep `.gitignore` as-is — it already has the PHP-relevant entries added earlier; kept the harmless Node/Vite lines too.
 - **Where:** `.bolt/` directory deleted; `.gitignore` unchanged.
@@ -105,7 +110,7 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
   - **What:** A migration runner (`core/Migrator.php`) plus 10 SQL files creating every `blog_*` table the app needs.
   - **Where:** `database/migrations/0001–0010*.sql`, `bin/migrate.php`.
   - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
-- [ ] Frontend component architecture — in progress (Section 5): `Badge`, `Card`, `Button`, `Table`, `InputField`/`FormGroup`, `Modal` all extracted and live-tested; remaining: move `app.js`'s `renderPostCard()` into `components.js`, convert `post-editor.html`'s hand-written fields to `FormGroup`
+- [ ] Frontend component architecture — in progress (Section 5): `Badge`, `Card` (including public post cards), `Button`, `Table`, `InputField`/`FormGroup`, `Modal` all extracted and live-tested; remaining: convert `post-editor.html`'s hand-written fields to `FormGroup`
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
@@ -210,7 +215,10 @@ Shared component functions live in `assets/js/components.js`, loaded on every pa
   - **What:** `Modal.wrapper` builds the `.modal-overlay > .modal-box` shell (header/body/footer) as a string. `Modal.confirm` uses it to inject a real confirm dialog into `<body>`, wired with Cancel/✕/backdrop-click/Confirm, replacing the native `window.confirm()`.
   - **Where:** `assets/js/components.js`; `Modal.confirm` now used in `dashboard.js` for all three destructive actions — delete post (`initPosts`), delete category (`initCategories`), delete media (`initMedia`) — previously three separate `confirm(...)` calls.
   - **Why:** This is the concrete "future modal" the plan mentioned — it proves `Modal.wrapper` is reusable beyond the one hand-written `cat-modal`, and gives all three delete flows one shared, styled, testable component instead of the browser's native dialog (which also isn't stylable and isn't something jsdom can drive in an automated test — `window.confirm()` had to be replaced to make delete flows testable at all).
-- [ ] Finish refactoring `app.js` (public site's `renderPostCard()` is already de-duplicated internally, but not yet moved into `components.js`)
+- [x] Move the public site's `renderPostCard()` into `Card.post()` in `components.js`
+  - **What:** Moved the public post-card element builder into `Card.post(post)` and changed every public-site renderer to use it. `window.renderPostCard` remains a backwards-compatible alias.
+  - **Where:** `assets/js/components.js`, `assets/js/app.js`.
+  - **Why:** Home, archive, category, featured, and related-post sections all use the same card; its markup now has one shared source alongside `Card.stat`, without changing the emitted card DOM.
 - [ ] Convert `post-editor.html`'s hand-written fields to `FormGroup`/`InputField` (left for a follow-up — bigger surface area: ~10 fields, radio group, file input, select)
 - [ ] Verify no visual/behavioral regression on every page after full refactor (Section 4's verification list)
 

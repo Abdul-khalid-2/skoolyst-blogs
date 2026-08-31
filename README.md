@@ -11,13 +11,17 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Frontend Component Architecture decided (Section 5)
+- **What:** Decided the frontend will move to reusable JS component functions (buttons, cards, tables, badges, modals, form fields) instead of hand-copied HTML markup per page — documented as a new checklist section. No code written yet, decision + plan only.
+- **Where:** `README.md` (this file) — new Section 5.
+- **Why:** Compared directly against `Abdul-khalid-2/skoolyst-advertisement`, which already runs this pattern in PHP (`views/components/stat-card.php`, `status-badge.php`, etc. — that repo's own comments note markup used to be hand-copied 4x per page before being extracted). Same problem exists here: `dashboard.js` already has one component-shaped function (`statCard()`) but table rows, badges, and form groups are still duplicated inline across pages. This is a maintainability/consistency decision, not a performance one — plain string-building JS has no virtual-DOM diffing to benefit from, so duplicating vs. sharing markup costs the same at runtime either way. The win is one place to fix bugs and change design, matching the pattern already proven out in the sibling `ads` project.
 
 ### 2026-08-31 — Database migration system (Section 6)
 - **What:** Added a migration runner + 10 SQL migration files creating all 11 `blog_*` tables (`blog_migrations`, `blog_users`, `blog_posts`, `blog_categories`, `blog_tags`, `blog_post_tags`, `blog_comments`, `blog_media`, `blog_post_views_daily`, `blog_audit_log`, `blog_api_keys`).
 - **Where:** `database/migrations/0001–0010*.sql`, `core/Migrator.php`, `bin/migrate.php`. Also fixed `core/Database.php`'s connection-failure handling.
 - **Why:** README's own architecture rules require every table to live under `blog_` prefix with no cross-app foreign keys — schema was written and FK-checked against that constraint directly (verified via `information_schema`, every FK points only to another `blog_*` table). Migrations aren't wrapped in an explicit PDO transaction because `CREATE TABLE` causes an implicit commit in MySQL/MariaDB anyway — wrapping it would be a no-op transaction, so the code doesn't pretend otherwise. `Database.php` was changed to `throw` on connection failure instead of calling `Response::json()`, because `Response` is an HTTP-only class that isn't loaded when `bin/migrate.php` runs from the CLI — the original code would fatal-error with "Class Response not found" outside a web request.
 
-### 2026-08-31 — Backend foundation (Sections 5 & 9)
+### 2026-08-31 — Backend foundation (Sections 6 & 10)
 - **What:** Added the plain-PHP core (`Env`, `Config`, `Database`, `Request`, `Response`, `Validator`, `Router`), a front controller (`index.php`), `.htaccess`, and the first working route (`GET /api/v1/health`).
 - **Where:** `core/*.php`, `config/app.php`, `config/database.php`, `.env.example`, `index.php`, `.htaccess`, `routes/api.php`.
 - **Why:** README's rules require plain PHP (no framework) and everything under `/api/v1/...`. `.htaccess` only rewrites requests starting with `/api/v1/` to `index.php` — real files/directories (the static frontend) are matched and served first, so the existing HTML pages are untouched and don't go through the router at all. `Request`/`Router` properties aren't `readonly` even though that's the more modern style, because `readonly`-in-`clone` needs PHP 8.3, and this needs to run on shared hosting that may only offer 8.1/8.2.
@@ -60,8 +64,9 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
 - [x] Frontend HTML/CSS scaffold complete
 - [x] Mock data layer (`assets/js/mock-data.js`) driving all pages
 - [x] Dashboard CRUD interactions work against mock data + `localStorage`
-- [x] PHP backend core + config + routing skeleton (Sections 5 & 9)
-- [x] Database schema — all 11 `blog_*` tables live-tested on local MySQL (Section 6)
+- [x] PHP backend core + config + routing skeleton (Sections 6 & 10)
+- [x] Database schema — all 11 `blog_*` tables live-tested on local MySQL (Section 7)
+- [ ] Frontend component architecture — decided (Section 5), not yet implemented
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
@@ -116,7 +121,26 @@ index.php   (API front controller)
 
 ---
 
-## 5. Backend Foundation
+## 5. Frontend Component Architecture (not started)
+
+Decision: move from hand-copied HTML markup per page to **reusable JS component functions**, mirroring the pattern already proven in `Abdul-khalid-2/skoolyst-advertisement` (there it's server-side PHP functions like `stat_card()`, `status_badge()` in `views/components/`; here it'll be plain JS functions since this frontend is static/mock-data driven, not server-rendered).
+
+This is a maintainability/consistency change, **not** a performance optimization — no virtual DOM here, so duplicated vs. shared markup costs the same at runtime. The win is a single place to fix a bug or change a design, instead of N copies.
+
+Planned shared component functions (new file, e.g. `assets/js/components.js`, loaded before `app.js`/`dashboard.js`):
+
+- [ ] `Button(label, variant, attrs)` — primary/secondary/danger button markup
+- [ ] `Card(...)` — post card / stat card wrapper (dashboard's existing `statCard()` in `dashboard.js` becomes the first thing migrated in here)
+- [ ] `Table(columns, rows)` or per-row renderers — used by `posts.html`, `categories.html` (`cat-row`), `media.html` (`media-item`)
+- [ ] `Badge(status)` — status pills (`badge-status`), mirrors `ads` repo's `status_badge()`
+- [ ] `InputField(...)` / `FormGroup(...)` — label + input/textarea wrapper, matches existing `.form-group` markup in `post-editor.html`
+- [ ] `Modal(...)` — generalize the category-add/edit modal markup so future modals (e.g. delete confirmation) don't hand-roll `.modal-overlay`/`.modal-box` again
+- [ ] Refactor `app.js` and `dashboard.js` to call these instead of building HTML strings inline
+- [ ] Verify no visual/behavioral regression on every page after refactor (Section 4's verification list)
+
+---
+
+## 6. Backend Foundation
 
 ### Core
 - [x] `core/Env.php` — dependency-free `.env` loader
@@ -127,7 +151,7 @@ index.php   (API front controller)
 - [x] `core/Validator.php` — `required|email|max|min|in|numeric` rule engine
 - [x] `core/Router.php` — path-param routing (`{id}`), 404/405 handling
 - [x] `index.php` — front controller, wires everything above, dispatches `/api/v1/*`
-- [ ] Auth middleware, authorization middleware (needs `blog_users`/sessions — Section 6/12)
+- [ ] Auth middleware, authorization middleware (needs `blog_users`/sessions — Section 7/13)
 - [ ] CSRF protection, rate limiter, upload handler, audit log helper
 - [x] Centralized error handling → JSON error responses (`set_exception_handler` in `index.php`)
 
@@ -136,9 +160,9 @@ index.php   (API front controller)
 - [x] App URL, session name, upload path/size/mime settings, DB connection settings
 - [x] `.htaccess` — routes `/api/v1/*` to `index.php`, leaves static frontend untouched, blocks direct `.env` access
 
-**Verified:** `php -l` clean on all new files; smoke-tested with PHP's built-in server — `GET /api/v1/health` → 200 with app name + timestamp, unknown `/api/v1/*` route → 404 JSON, non-API path → 404 JSON (never reaches the router). No live MySQL yet, so DB-touching endpoints are still untested — that starts with Section 6.
+**Verified:** `php -l` clean on all new files; smoke-tested with PHP's built-in server — `GET /api/v1/health` → 200 with app name + timestamp, unknown `/api/v1/*` route → 404 JSON, non-API path → 404 JSON (never reaches the router).
 
-## 6. Database
+## 7. Database
 
 All tables prefixed `blog_`, isolated from `ads.skoolyst.com` / `teachers.skoolyst.com` — verified via `information_schema` that every foreign key in this schema points only to another `blog_*` table.
 
@@ -167,7 +191,7 @@ blog_audit_log, blog_api_keys
 
 Migration files live in `database/migrations/*.sql`, numbered and run in order. Add new ones with the next number — never edit an already-applied migration file.
 
-## 7. API (`/api/v1/...`, not started)
+## 8. API (`/api/v1/...`, not started)
 
 **Public:** `GET /posts` (pagination, category/search filter, published-only), `GET /posts/{id}`, `GET /categories`, `POST /posts/{id}/comments` (validated, saved pending, rate-limited), `POST /posts/{id}/view`
 
@@ -182,7 +206,7 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 - [ ] Author API implemented
 - [ ] Admin API implemented
 
-## 8. Application Modules (not started)
+## 9. Application Modules (not started)
 
 ```text
 app/{Posts,Categories,Comments,Media,Auth}/
@@ -195,13 +219,13 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 - [ ] Media module
 - [ ] Auth module
 
-## 9. Routing
+## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
-- [ ] Module route files (`routes/api/posts.php` etc.) — added as each module in Section 8 is built
-- [ ] Auth + admin middleware applied to routes (depends on Section 12)
+- [ ] Module route files (`routes/api/posts.php` etc.) — added as each module in Section 9 is built
+- [ ] Auth + admin middleware applied to routes (depends on Section 13)
 
-## 10. Frontend → API Integration (not started)
+## 11. Frontend → API Integration (not started)
 
 Keep existing HTML/CSS; replace mock-data calls with real fetches.
 
@@ -212,33 +236,33 @@ Keep existing HTML/CSS; replace mock-data calls with real fetches.
 - [ ] Public frontend wired to API
 - [ ] Dashboard wired to API
 
-## 11. Mock Data Migration (not started)
+## 12. Mock Data Migration (not started)
 - [ ] Review + seed: authors, categories, posts, comments, media, stats
 - [ ] Switch frontend off `mock-data.js`
 - [ ] Remove `mock-data.js` only after API migration is verified
 
-## 12. Auth & Security (not started)
+## 13. Auth & Security (not started)
 - [ ] Password hashing, login/logout, session regeneration
 - [ ] Unique blog session name (no conflicts with other Skoolyst apps)
 - [ ] Author ownership checks, admin authorization
 - [ ] Input validation, prepared statements, upload MIME/size limits
 - [ ] API rate limiting, comment spam protection, admin action audit log
 
-## 13. Media Uploads (not started)
+## 14. Media Uploads (not started)
 - [ ] `public/uploads/media/` with writable perms
 - [ ] MIME/size validation, safe filenames, block executables
 - [ ] Cover image upload, media library upload/delete
 
-## 14. Testing (not started)
+## 15. Testing (not started)
 - [ ] Backend: DB, migrations, seeders, auth, all API groups, validation, errors, rate limiting
-- [ ] Frontend: every public page + every dashboard flow
+- [ ] Frontend: every public page + every dashboard flow, plus no regression after Section 5's component refactor
 - [ ] Cross-app isolation: no shared tables/sessions/FKs with `ads`/`teachers`, no data leakage across APIs
 
-## 15. Production Deployment (not started)
+## 16. Production Deployment (not started)
 - [ ] Production `.env` + DB, migrations/seeders, Apache + `.htaccess`, `/api/v1` routing, upload dir, error logging off in prod, HTTPS
 - [ ] Smoke test: API, frontend, dashboard login, media uploads, DB perms
 
-## 16. Final Cleanup (not started)
+## 17. Final Cleanup (not started)
 - [ ] Remove unused mock/debug code, test credentials
 - [ ] Confirm `.env` not committed, verify security settings & indexes
 - [ ] Verify mobile responsiveness
@@ -249,9 +273,9 @@ Keep existing HTML/CSS; replace mock-data calls with real fetches.
 ## Development Order
 
 ```text
-1. Foundation → 2. Database → 3. Core modules → 4. API → 5. Auth
-→ 6. Frontend/API integration → 7. Mock-data migration → 8. Security
-→ 9. Testing → 10. Deployment → 11. Cleanup
+1. Foundation → 2. Database → 3. Frontend components → 4. Core modules
+→ 5. API → 6. Auth → 7. Frontend/API integration → 8. Mock-data migration
+→ 9. Security → 10. Testing → 11. Deployment → 12. Cleanup
 ```
 
 Work one small task at a time: implement → test → check it off here → move on. Never check off something untested.

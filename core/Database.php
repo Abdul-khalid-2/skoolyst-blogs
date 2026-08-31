@@ -28,10 +28,12 @@ class Database
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]);
             } catch (PDOException $e) {
-                // Never leak DSN/credentials in the response body.
+                // Never leak DSN/credentials. Let the caller decide how to surface
+                // this — index.php's exception handler turns it into a JSON 500,
+                // bin/*.php CLI scripts print it to STDERR. Don't couple this
+                // class to the HTTP-only Response class.
                 error_log('[blog.skoolyst.com] DB connection failed: ' . $e->getMessage());
-                Response::json(['error' => 'Database connection failed.'], 500);
-                exit;
+                throw new RuntimeException('Database connection failed.', 0, $e);
             }
         }
 

@@ -33,8 +33,8 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
 - [x] Frontend HTML/CSS scaffold complete
 - [x] Mock data layer (`assets/js/mock-data.js`) driving all pages
 - [x] Dashboard CRUD interactions work against mock data + `localStorage`
-- [x] PHP backend core + config + routing skeleton (Sections 5 & 9) — see below
-- [ ] Database (`blog_*` tables) — not started
+- [x] PHP backend core + config + routing skeleton (Sections 5 & 9)
+- [x] Database schema — all 11 `blog_*` tables live-tested on local MySQL (Section 6)
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
@@ -71,9 +71,11 @@ assets/
 ├── css/ (style.css, dashboard.css)
 └── js/  (app.js, dashboard.js, mock-data.js)
 
-core/    (Env, Config, Database, Request, Response, Validator, Router)
+core/    (Env, Config, Database, Request, Response, Validator, Router, Migrator)
 config/  (app.php, database.php)
 routes/  (api.php)
+database/migrations/  (0001–0010, run via bin/migrate.php)
+bin/migrate.php   (CLI migration runner)
 public/uploads/media/   (empty, gitignored except .gitkeep)
 index.php   (API front controller)
 .htaccess   (routes /api/v1/* to index.php)
@@ -109,9 +111,9 @@ index.php   (API front controller)
 
 **Verified:** `php -l` clean on all new files; smoke-tested with PHP's built-in server — `GET /api/v1/health` → 200 with app name + timestamp, unknown `/api/v1/*` route → 404 JSON, non-API path → 404 JSON (never reaches the router). No live MySQL yet, so DB-touching endpoints are still untested — that starts with Section 6.
 
-## 6. Database (not started)
+## 6. Database
 
-All tables prefixed `blog_`:
+All tables prefixed `blog_`, isolated from `ads.skoolyst.com` / `teachers.skoolyst.com` — verified via `information_schema` that every foreign key in this schema points only to another `blog_*` table.
 
 ```text
 blog_migrations, blog_users, blog_posts, blog_categories, blog_tags,
@@ -119,16 +121,24 @@ blog_post_tags, blog_comments, blog_media, blog_post_views_daily,
 blog_audit_log, blog_api_keys
 ```
 
-- [ ] Migration runner + `blog_migrations`
-- [ ] `blog_users` (author/admin fields, password hash, status)
-- [ ] `blog_posts` (title, slug, excerpt, body, cover, status, author_id, category_id, published_date, views, SEO fields)
-- [ ] `blog_categories` (name, slug, description, color)
-- [ ] `blog_tags` + `blog_post_tags`
-- [ ] `blog_comments` (post_id, author name/email, body, moderation status)
-- [ ] `blog_media` (filename, path, alt text, uploaded_by)
-- [ ] `blog_post_views_daily` (daily view aggregation)
-- [ ] `blog_audit_log`
-- [ ] `blog_api_keys`
+- [x] Migration runner (`core/Migrator.php`) + `blog_migrations` tracking table
+- [x] `blog_users` (author/admin fields, password hash, status)
+- [x] `blog_posts` (title, slug, excerpt, body, cover, status, author_id, category_id, published_date, views, SEO fields, soft-delete via `deleted_at`)
+- [x] `blog_categories` (name, slug, description, color)
+- [x] `blog_tags` + `blog_post_tags` (composite PK pivot)
+- [x] `blog_comments` (post_id, author name/email, body, moderation status)
+- [x] `blog_media` (filename, path, alt text, uploaded_by)
+- [x] `blog_post_views_daily` (unique per post/day, for aggregation)
+- [x] `blog_audit_log`
+- [x] `blog_api_keys`
+
+**Verified against a live local MySQL/MariaDB instance:**
+- `php bin/migrate.php` → all 10 migration files run cleanly, create 11 tables
+- Re-running `php bin/migrate.php` → correctly reports "Nothing to migrate" (idempotent)
+- `information_schema.KEY_COLUMN_USAGE` check → every FK references a `blog_*` table only
+- `Database::execute` / `selectOne` round-tripped an insert → read → delete successfully
+
+Migration files live in `database/migrations/*.sql`, numbered and run in order. Add new ones with the next number — never edit an already-applied migration file.
 
 ## 7. API (`/api/v1/...`, not started)
 

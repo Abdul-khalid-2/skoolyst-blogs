@@ -7,6 +7,33 @@ This README is the **development task tracker**. Update it as work happens — c
 
 ---
 
+## Change Log — What / Where / Why
+
+Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
+
+
+### 2026-08-31 — Database migration system (Section 6)
+- **What:** Added a migration runner + 10 SQL migration files creating all 11 `blog_*` tables (`blog_migrations`, `blog_users`, `blog_posts`, `blog_categories`, `blog_tags`, `blog_post_tags`, `blog_comments`, `blog_media`, `blog_post_views_daily`, `blog_audit_log`, `blog_api_keys`).
+- **Where:** `database/migrations/0001–0010*.sql`, `core/Migrator.php`, `bin/migrate.php`. Also fixed `core/Database.php`'s connection-failure handling.
+- **Why:** README's own architecture rules require every table to live under `blog_` prefix with no cross-app foreign keys — schema was written and FK-checked against that constraint directly (verified via `information_schema`, every FK points only to another `blog_*` table). Migrations aren't wrapped in an explicit PDO transaction because `CREATE TABLE` causes an implicit commit in MySQL/MariaDB anyway — wrapping it would be a no-op transaction, so the code doesn't pretend otherwise. `Database.php` was changed to `throw` on connection failure instead of calling `Response::json()`, because `Response` is an HTTP-only class that isn't loaded when `bin/migrate.php` runs from the CLI — the original code would fatal-error with "Class Response not found" outside a web request.
+
+### 2026-08-31 — Backend foundation (Sections 5 & 9)
+- **What:** Added the plain-PHP core (`Env`, `Config`, `Database`, `Request`, `Response`, `Validator`, `Router`), a front controller (`index.php`), `.htaccess`, and the first working route (`GET /api/v1/health`).
+- **Where:** `core/*.php`, `config/app.php`, `config/database.php`, `.env.example`, `index.php`, `.htaccess`, `routes/api.php`.
+- **Why:** README's rules require plain PHP (no framework) and everything under `/api/v1/...`. `.htaccess` only rewrites requests starting with `/api/v1/` to `index.php` — real files/directories (the static frontend) are matched and served first, so the existing HTML pages are untouched and don't go through the router at all. `Request`/`Router` properties aren't `readonly` even though that's the more modern style, because `readonly`-in-`clone` needs PHP 8.3, and this needs to run on shared hosting that may only offer 8.1/8.2.
+
+### 2026-08-31 — Missing dashboard pages (`categories.html`, `media.html`)
+- **What:** Added `dashboard/categories.html` and `dashboard/media.html`.
+- **Where:** `dashboard/` folder.
+- **Why:** Every dashboard page's sidebar already linked to both files, and `assets/js/dashboard.js` / `assets/css/dashboard.css` already had full working logic and styling for both (`initCategories()`, `initMedia()`, `.cat-row`, `.media-grid`, etc.) — the HTML pages themselves were just never created, so those two sidebar links 404'd on every page. No new JS or CSS was written; the pages only had to attach to what already existed, so behavior matches the rest of the dashboard exactly.
+
+### 2026-08-31 — README rewritten as an actual checklist
+- **What:** Replaced `README.md`.
+- **Where:** `README.md`.
+- **Why:** The file on GitHub wasn't a real README — it was a meta-instruction document (someone had prompted an AI to rewrite the README into a checklist, but that rewritten output was never committed; only the instructions were). This rewrite is that instruction actually carried out, with real status per section instead of a template.
+
+---
+
 ## 1. Architecture
 
 ```text

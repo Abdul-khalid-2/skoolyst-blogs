@@ -118,6 +118,7 @@ var InputField = {
     opts = opts || {};
     return '<input type="text" id="' + id + '"' +
       (opts.name ? ' name="' + opts.name + '"' : '') +
+      (opts.className ? ' class="' + opts.className + '"' : '') +
       (opts.placeholder ? ' placeholder="' + escapeHtml(opts.placeholder) + '"' : '') +
       (opts.value ? ' value="' + escapeHtml(opts.value) + '"' : '') + ' />';
   },
@@ -125,6 +126,7 @@ var InputField = {
     opts = opts || {};
     return '<textarea id="' + id + '"' +
       (opts.name ? ' name="' + opts.name + '"' : '') +
+      (opts.className ? ' class="' + opts.className + '"' : '') +
       ' rows="' + (opts.rows || 2) + '"' +
       (opts.placeholder ? ' placeholder="' + escapeHtml(opts.placeholder) + '"' : '') + '>' +
       (opts.value ? escapeHtml(opts.value) : '') + '</textarea>';
@@ -132,6 +134,24 @@ var InputField = {
   color: function (id, opts) {
     opts = opts || {};
     return '<input type="color" id="' + id + '" value="' + (opts.value || '#4361ee') + '" />';
+  },
+  select: function (id, opts) {
+    opts = opts || {};
+    return '<select id="' + id + '"' +
+      (opts.name ? ' name="' + opts.name + '"' : '') +
+      (opts.className ? ' class="' + opts.className + '"' : '') + '>' +
+      (opts.optionsHtml || '') + '</select>';
+  },
+  radio: function (name, value, label, opts) {
+    opts = opts || {};
+    return '<label><input type="radio" name="' + name + '" value="' + value + '"' +
+      (opts.checked ? ' checked' : '') + ' />' + escapeHtml(label) + '</label>';
+  },
+  file: function (id, opts) {
+    opts = opts || {};
+    return '<input type="file" id="' + id + '"' +
+      (opts.accept ? ' accept="' + escapeHtml(opts.accept) + '"' : '') +
+      (opts.style ? ' style="' + opts.style + '"' : '') + ' />';
   }
 };
 
@@ -140,7 +160,7 @@ var FormGroup = {
    * label + input/textarea wrapper matching the `.form-group` markup already
    * used (hand-written) in post-editor.html and, until this refactor, in
    * categories.html's add/edit-category modal. Field-level helpers below
-   * (text/textarea/color) compose this with InputField so callers don't
+   * (text/textarea/color/select/radio) compose this with InputField so callers don't
    * hand-roll the wrapper each time. Deliberately produces the exact same
    * classes/structure as the old hand-written HTML — this is a markup-source
    * change, not a visual one (there's no `.modal-box .form-group` CSS rule,
@@ -148,8 +168,9 @@ var FormGroup = {
    */
   wrap: function (labelText, forId, inputHtml, opts) {
     opts = opts || {};
+    var labelClass = opts.labelClass ? ' class="' + opts.labelClass + '"' : '';
     return '<div class="form-group"' + (opts.style ? ' style="' + opts.style + '"' : '') + '>' +
-      '<label for="' + forId + '">' + escapeHtml(labelText) + (opts.required ? ' <span class="req">*</span>' : '') + '</label>' +
+      '<label for="' + forId + '"' + labelClass + '>' + escapeHtml(labelText) + (opts.required ? ' <span class="req">*</span>' : '') + '</label>' +
       inputHtml +
       (opts.hint ? '<div class="form-hint">' + escapeHtml(opts.hint) + '</div>' : '') +
       '</div>';
@@ -165,6 +186,14 @@ var FormGroup = {
   color: function (id, opts) {
     opts = opts || {};
     return FormGroup.wrap(opts.label, id, InputField.color(id, opts), opts);
+  },
+  select: function (id, opts) {
+    opts = opts || {};
+    return FormGroup.wrap(opts.label, id, InputField.select(id, opts), opts);
+  },
+  radio: function (id, opts) {
+    opts = opts || {};
+    return FormGroup.wrap(opts.label, id, '<div class="status-toggle">' + opts.radiosHtml + '</div>', opts);
   }
 };
 

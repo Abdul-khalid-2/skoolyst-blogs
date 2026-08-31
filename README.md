@@ -62,10 +62,29 @@ blog.skoolyst.com
 The repo currently contains **only the static frontend prototype** — it's UI/mock-data only, there is no PHP backend, database, or API yet.
 
 - [x] Frontend HTML/CSS scaffold complete
+  - **What:** All public pages (`index`, `blog`, `post`, `category`, `about`, `contact`) and dashboard pages (`overview`, `posts`, `post-editor`, `categories`, `media`) exist with full HTML/CSS.
+  - **Where:** Repo root `*.html`, `dashboard/*.html`, `assets/css/style.css`, `assets/css/dashboard.css`.
+  - **Why:** This was the state of the repo before any backend work started — it's a Bolt.new-exported frontend prototype, not something built in this session (except the two missing dashboard pages, logged separately below).
+
 - [x] Mock data layer (`assets/js/mock-data.js`) driving all pages
+  - **What:** Hardcoded JS arrays/objects (`MOCK_POSTS`, `MOCK_CATEGORIES`, `MOCK_MEDIA`, etc.) that every page reads from instead of a real database.
+  - **Where:** `assets/js/mock-data.js`, consumed by `assets/js/app.js` (public site) and `assets/js/dashboard.js` (dashboard).
+  - **Why:** Lets the frontend be fully clickable/demoable with no backend — this is what Section 12 (Mock Data Migration) will eventually replace with real API calls, but it stays in place until the API is proven out, so the UI never breaks mid-migration.
+
 - [x] Dashboard CRUD interactions work against mock data + `localStorage`
+  - **What:** Creating/editing/deleting posts, categories, and media in the dashboard actually updates state and persists across page reloads.
+  - **Where:** `assets/js/dashboard.js` (`initPosts()`, `initCategories()`, `initMedia()` etc.), backed by the browser's `localStorage`.
+  - **Why:** `localStorage` was the original prototype's stand-in for a database — good enough to demo real CRUD flows before any PHP/MySQL existed. It's a stepping stone, not the final design: Section 11 replaces these calls with real `fetch()` calls to `/api/v1/...`.
+
 - [x] PHP backend core + config + routing skeleton (Sections 6 & 10)
+  - **What:** `core/` classes (`Env`, `Config`, `Database`, `Request`, `Response`, `Validator`, `Router`), `config/app.php` + `config/database.php`, `index.php` front controller, `.htaccess`, and a working `GET /api/v1/health` route.
+  - **Where:** `core/*.php`, `config/*.php`, `index.php`, `.htaccess`, `routes/api.php`.
+  - **Why:** README's architecture requires plain PHP (no framework) with everything under `/api/v1/...` — this is the minimum scaffolding needed before any real endpoint can exist. Built and smoke-tested with PHP's built-in server before moving to the database (see the Change Log entry for the exact test results).
+
 - [x] Database schema — all 11 `blog_*` tables live-tested on local MySQL (Section 7)
+  - **What:** A migration runner (`core/Migrator.php`) plus 10 SQL files creating every `blog_*` table the app needs.
+  - **Where:** `database/migrations/0001–0010*.sql`, `bin/migrate.php`.
+  - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
 - [ ] Frontend component architecture — decided (Section 5), not yet implemented
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)

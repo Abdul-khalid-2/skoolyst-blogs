@@ -323,7 +323,7 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 - [ ] Author API implemented
 - [ ] Admin API implemented
 
-## 9. Application Modules (not started)
+## 9. Application Modules (in progress)
 
 ```text
 app/{Posts,Categories,Comments,Media,Auth}/
@@ -331,7 +331,11 @@ app/{Posts,Categories,Comments,Media,Auth}/
 Each module: Controller, Repository, Model, Validator (where needed), Routes, auth/authorization, error handling, tests. Don't create classes a module doesn't need.
 
 - [ ] Posts module
-- [ ] Categories module
+- [x] Categories module — `app/Categories/{Model,Repository,Controller}.php`, `routes/api/categories.php`
+  - **What:** `GET /categories` (list, with a `post_count` per category) and `GET /categories/{slug}` are public; `POST /admin/categories` and `PATCH`/`DELETE /admin/categories/{id}` require an admin session via `AuthMiddleware::requireAdmin()` — matching Section 8's documented public-vs-admin path split. Create/update auto-generate a unique slug from the name (`core/Str::slugify()`, de-duplicated as `name-2`, `name-3`, ...) and only re-slug on update if the name actually changed. Delete is blocked with a 409 if any non-deleted post still references the category (`CategoryRepository::countPostsUsing()`), mirroring the same guard `dashboard.js`'s mock version already had.
+  - **Where:** `app/Categories/*.php`, `core/Str.php` (new, shared slugify — `Posts` module will reuse it), `routes/api/categories.php`, required from `routes/api.php`.
+  - **Why:** Categories has no dependents yet (Posts isn't built), so it's the simplest real module to stand up next after Auth, and it establishes the slug + admin-guard patterns Posts will reuse.
+  - **Tested:** Live tested (local MariaDB + PHP built-in server) — public list/show work logged-out; create/update/delete return 401 logged-out and 403 for a logged-in non-admin; admin create/update succeed with slug de-dup and hex-color validation (422 on bad input); delete returns 409 with the post count for a category still in use, and succeeds for one with zero posts; 404s return correctly for unknown id/slug.
 - [ ] Comments module
 - [ ] Media module
 - [x] Auth module — `app/Auth/{Model,Repository,Middleware,Controller}.php`; `AuthMiddleware::requireUser()`/`::requireAdmin()` ready for Author/Admin modules to call
@@ -339,8 +343,8 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 ## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
-- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php` added; others added as each module in Section 9 is built
-- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me`; Posts/Categories/Comments/Media routes will apply it once built
+- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php` and `routes/api/categories.php` added; others added as each module in Section 9 is built
+- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me` and all of `/admin/categories/*`; Posts/Comments/Media routes will apply it once built
 
 ## 11. Frontend → API Integration (not started)
 

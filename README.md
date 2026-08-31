@@ -11,6 +11,11 @@ This README is the **development task tracker**. Update it as work happens — c
 
 Every completed task gets a short entry here: **what** changed, **where**, and **why** it was done that way. If a future change looks like it conflicts with something (a naming choice, a missing feature, a design decision), check here first before assuming it's a mistake. **Add a new entry every time a task from this checklist is completed** — newest entry on top.
 
+### 2026-08-31 — Section 3 scaffold cleanup decisions
+- **What:** Removed `.bolt/config.json` (dead Vite template marker, unused). Decided to keep `.gitignore` as-is — it already has the PHP-relevant entries added earlier; kept the harmless Node/Vite lines too.
+- **Where:** `.bolt/` directory deleted; `.gitignore` unchanged.
+- **Why:** `.bolt/config.json` had zero references anywhere else in the repo (grepped for it). Trimming `.gitignore`'s Node/Vite lines had no real upside since there's no build step to conflict with them, so left them in place rather than churn the file for no benefit. Also refreshed Section 2's stale "component architecture" status line — it still said `Button`/`Table`/`InputField`/`Modal` were pending, which is now out of date.
+
 ### 2026-08-31 — Section 4 frontend verification + a real bug fix
 - **What:** Loaded every public page (`index`, `blog`, `post` incl. its not-found state, `category`, `about`, `contact`) and every dashboard page (`overview`, `posts`, `post-editor` incl. edit-mode prefill, `categories`, `media`) in jsdom over real HTTP (`php -S`), asserting actual rendered content rather than just that pages loaded without error. Also verified the mobile sidebar toggle's open/close JS behavior end-to-end, and confirmed the existing CSS breakpoints/design tokens are untouched. Found and fixed one real bug: `post.html`'s `<section class="comments-section">` was missing `id="comments-section"`, so `app.js`'s post-not-found handler threw a `TypeError` calling `.style` on `null`, silently skipping the rest of that cleanup block.
 - **Where:** `post.html` — added the missing `id="comments-section"` attribute. No other production files changed.
@@ -100,7 +105,7 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
   - **What:** A migration runner (`core/Migrator.php`) plus 10 SQL files creating every `blog_*` table the app needs.
   - **Where:** `database/migrations/0001–0010*.sql`, `bin/migrate.php`.
   - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
-- [ ] Frontend component architecture — in progress (Section 5): `Badge` + `Card` extracted and live-tested, `Button`/`Table`/`InputField`/`Modal` still pending
+- [ ] Frontend component architecture — in progress (Section 5): `Badge`, `Card`, `Button`, `Table`, `InputField`/`FormGroup`, `Modal` all extracted and live-tested; remaining: move `app.js`'s `renderPostCard()` into `components.js`, convert `post-editor.html`'s hand-written fields to `FormGroup`
 - [ ] `/api/v1/...` — health check only so far; real endpoints not started
 - [ ] Real authentication — not started (dashboard is unprotected, hardcoded "Sarah Chen" user)
 
@@ -113,8 +118,14 @@ The dashboard sidebar linked to `categories.html` and `media.html` on every page
 
 Leftover scaffold from the original Bolt.new export (not needed for a plain-PHP static-frontend project):
 
-- [ ] Decide whether to remove `.bolt/config.json` (Vite template marker — unused, this isn't a Vite project)
-- [ ] Decide whether to trim `.gitignore` (currently Node/Vite-oriented — `node_modules`, `dist`, etc. — irrelevant until an actual build step or PHP backend is added; PHP-relevant entries like `.env`, `vendor/`, `uploads/` will need adding once the backend exists)
+- [x] Removed `.bolt/config.json` (Vite template marker — unused, this isn't a Vite project)
+  - **What:** Deleted the `.bolt/` directory (`config.json` contained only `{"template": "vite"}`).
+  - **Where:** `.bolt/config.json` removed.
+  - **Why:** Grepped the whole repo for any reference to `.bolt` or its contents — none exist outside that one file, so it's dead scaffold from the original Bolt.new export. Confirmed the site still serves correctly (`index.html` and dashboard both 200) after removal.
+- [x] Decided on `.gitignore`: keep as-is
+  - **What:** No change needed — `.gitignore` already has the PHP-relevant entries (`.env`, `vendor/`, `public/uploads/media/*` with `.gitkeep` kept) added during the backend-foundation work (Section 6). The Node/Vite entries (`node_modules`, `dist`, `dist-ssr`) are left in place.
+  - **Where:** `.gitignore` (no edit made).
+  - **Why:** The PHP entries this item was really asking for already exist. The leftover Node/Vite lines are harmless with no build step in this project, and keeping them costs nothing while guarding against an accidental commit if any tooling (like this session's temporary jsdom test setup) is ever added and not cleaned up properly — so trimming them has no upside worth the churn.
 
 ## 4. Existing Frontend Pages
 

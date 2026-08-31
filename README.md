@@ -285,6 +285,15 @@ blog_audit_log, blog_api_keys
 
 Migration files live in `database/migrations/*.sql`, numbered and run in order. Add new ones with the next number — never edit an already-applied migration file.
 
+### One-time local setup
+
+1. Copy the env file — `cp .env.example .env` and fill in your local DB credentials
+2. Create the database (matching the name in `.env`)
+3. Run migrations — `php bin/migrate.php`
+4. Seed the database
+
+**New migration files?** Run `php bin/migrate.php`
+
 ## 8. API (`/api/v1/...`, not started)
 
 **Public:** `GET /posts` (pagination, category/search filter, published-only), `GET /posts/{id}`, `GET /categories`, `POST /posts/{id}/comments` (validated, saved pending, rate-limited), `POST /posts/{id}/view`

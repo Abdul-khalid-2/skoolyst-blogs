@@ -47,12 +47,13 @@
         <div class="topbar-actions">
           <a href="post-editor.html" class="btn-primary-dash">+ New Post</a>
           <div class="topbar-user">
-            <img src="https://i.pravatar.cc/150?img=47" alt="Sarah Chen" />
+            <img src="https://i.pravatar.cc/150?img=47" alt="" />
             <div>
-              <div class="user-name">Sarah Chen</div>
-              <div class="user-role">Editor</div>
+              <div class="user-name" id="topbar-user-name">…</div>
+              <div class="user-role" id="topbar-user-role"></div>
             </div>
           </div>
+          <button type="button" class="btn-secondary-dash" id="dash-logout-btn" style="padding:.5rem .9rem">Log Out</button>
         </div>
       </header>
 
@@ -97,20 +98,8 @@
   </div>
 
   <script src="../assets/js/mock-data.js"></script>
+  <script src="../assets/js/api.js"></script>
   <script src="../assets/js/components.js"></script>
   <script src="../assets/js/dashboard.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      var sel = document.getElementById('posts-category');
-      if (sel) {
-        MOCK_CATEGORIES.forEach(function (c) {
-          var opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.name;
-          sel.appendChild(opt);
-        });
-      }
-    });
-  </script>
 </body>
 </html>

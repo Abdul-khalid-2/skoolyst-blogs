@@ -566,6 +566,11 @@ table.dash-table .table-thumb {
   line-height: 1.6;
   resize: vertical;
 }
+.editor-form input.readonly-field {
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
 .editor-form .form-hint {
   font-size: .8rem;
   color: var(--text-muted);

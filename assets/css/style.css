@@ -731,17 +731,18 @@ p { margin: 0 0 1rem; }
   margin-top: .5rem;
   font-style: italic;
 }
+.comment-form input,
 .comment-form textarea {
   width: 100%;
-  min-height: 100px;
   padding: .75rem 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: .95rem;
-  resize: vertical;
   margin-bottom: .75rem;
 }
+.comment-form textarea { min-height: 100px; resize: vertical; }
+.comment-form input:focus,
 .comment-form textarea:focus {
   outline: none;
   border-color: var(--secondary);

@@ -7,7 +7,7 @@
    plain JS functions here since this frontend is static /
    mock-data driven rather than server-rendered.
 
-   Load order: mock-data.js (escapeHtml/formatDate) -> components.js -> app.js / dashboard.js
+   Load order: mock-data.js (escapeHtml/formatDate) -> api.js -> components.js -> app.js / dashboard.js
    ============================================================ */
 
 var Badge = {
@@ -43,38 +43,54 @@ var Card = {
    * originally, even though the same card is used by the home, archive,
    * category, and related-post sections; keeping it here gives every card
    * type one shared home.
+   *
+   * Takes the real API Post shape (Section 11 rewire): {id, title, excerpt,
+   * cover_image, category:{name,color}|null, author_name, published_date,
+   * body, views}. There's no per-author avatar or a readTimeMinutes field
+   * from the backend (Post::toArray() has neither), so the avatar image is
+   * dropped from the meta line and read time is estimated client-side from
+   * the body's word count (same ~200wpm formula the old post-editor used).
    */
   post: function (post) {
-    var cat = getCategoryById(post.category);
-    var author = getAuthorById(post.author);
+    var cat = post.category || {};
     var safeTitle = escapeHtml(post.title);
-    var safeExcerpt = escapeHtml(post.excerpt);
-    var safeAuthor = escapeHtml(author.name);
-    var safeCat = escapeHtml(cat.name);
-    var safeDate = escapeHtml(formatDate(post.publishedDate));
+    var safeExcerpt = escapeHtml(post.excerpt || '');
+    var safeAuthor = escapeHtml(post.author_name || 'Skoolyst');
+    var safeCat = escapeHtml(cat.name || 'Uncategorized');
+    var safeDate = escapeHtml(formatDate(post.published_date));
+    var chipColor = cat.color || '#4361ee';
+    var cover = post.cover_image || Card.DEFAULT_COVER;
 
     var card = document.createElement('article');
     card.className = 'post-card';
     card.innerHTML =
       '<div class="card-cover">' +
-        '<a href="post.html?id=' + encodeURIComponent(post.slug) + '">' +
-          '<img src="' + post.coverImage + '" alt="' + safeTitle + '" loading="lazy" />' +
+        '<a href="post.html?id=' + encodeURIComponent(post.id) + '">' +
+          '<img src="' + cover + '" alt="' + safeTitle + '" loading="lazy" />' +
         '</a>' +
       '</div>' +
       '<div class="card-body">' +
-        '<span class="card-chip" style="background:' + cat.color + '15;color:' + cat.color + '">' + safeCat + '</span>' +
-        '<h3 class="card-title"><a href="post.html?id=' + encodeURIComponent(post.slug) + '">' + safeTitle + '</a></h3>' +
+        '<span class="card-chip" style="background:' + chipColor + '15;color:' + chipColor + '">' + safeCat + '</span>' +
+        '<h3 class="card-title"><a href="post.html?id=' + encodeURIComponent(post.id) + '">' + safeTitle + '</a></h3>' +
         '<p class="card-excerpt">' + safeExcerpt + '</p>' +
         '<div class="card-meta">' +
-          '<img src="' + author.avatar + '" alt="' + safeAuthor + '" loading="lazy" />' +
           '<span>' + safeAuthor + '</span>' +
           '<span class="meta-dot"></span>' +
           '<span>' + safeDate + '</span>' +
           '<span class="meta-dot"></span>' +
-          '<span>' + post.readTimeMinutes + ' min read</span>' +
+          '<span>' + Card.readTime(post.body) + ' min read</span>' +
         '</div>' +
       '</div>';
     return card;
+  },
+
+  /** Fallback cover image for posts saved without one. */
+  DEFAULT_COVER: 'https://images.pexels.com/photos/8197511/pexels-photo-8197511.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+
+  /** ~200wpm estimate — the backend doesn't store/return a read-time field. */
+  readTime: function (body) {
+    var words = (body || '').trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.round(words / 200));
   }
 };
 

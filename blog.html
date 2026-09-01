@@ -106,21 +106,8 @@
   </footer>
 
   <script src="assets/js/mock-data.js"></script>
+  <script src="assets/js/api.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/app.js"></script>
-  <script>
-    /* Populate category filter */
-    document.addEventListener('DOMContentLoaded', function () {
-      var sel = document.getElementById('blog-category');
-      if (sel) {
-        MOCK_CATEGORIES.forEach(function (c) {
-          var opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.name;
-          sel.appendChild(opt);
-        });
-      }
-    });
-  </script>
 </body>
 </html>

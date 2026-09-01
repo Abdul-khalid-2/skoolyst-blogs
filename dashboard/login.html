@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log In — Skoolyst Blog Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="stylesheet" href="../assets/css/dashboard.css" />
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      padding: 1.5rem;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+    }
+    .login-card .brand {
+      justify-content: center;
+      margin-bottom: .25rem;
+    }
+    .login-card p.login-sub {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .9rem;
+      margin: 0 0 1.5rem;
+    }
+    .login-field { margin-bottom: 1.1rem; }
+    .login-field label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 600;
+      margin-bottom: .4rem;
+    }
+    .login-field input {
+      width: 100%;
+      padding: .65rem .8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-size: .95rem;
+    }
+    .login-field input:focus {
+      outline: none;
+      border-color: var(--secondary);
+    }
+    .login-error {
+      display: none;
+      background: var(--error-bg);
+      color: var(--error);
+      border-radius: var(--radius-sm);
+      padding: .6rem .8rem;
+      font-size: .85rem;
+      margin-bottom: 1.1rem;
+    }
+    .login-error.show { display: block; }
+    .login-submit {
+      width: 100%;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <a href="../index.html" class="brand">
+        <span class="brand-dot"></span>
+        Skoolyst<span style="font-weight:400;color:var(--text-muted)"> Blog</span>
+      </a>
+      <p class="login-sub">Sign in to the dashboard</p>
+
+      <div class="login-error" id="login-error"></div>
+
+      <form id="login-form">
+        <div class="login-field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" name="email" autocomplete="username" required />
+        </div>
+        <div class="login-field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn-primary-dash login-submit" id="login-submit">Log In</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.getElementById('login-form');
+      var errorBox = document.getElementById('login-error');
+      var submitBtn = document.getElementById('login-submit');
+
+      /* Already logged in? Skip straight past the login screen. */
+      Api.get('/auth/me').then(function () {
+        window.location.href = redirectTarget();
+      }, function () { /* not logged in — stay on this page */ });
+
+      function redirectTarget() {
+        var params = new URLSearchParams(window.location.search);
+        var target = params.get('redirect');
+        return target && !target.startsWith('http') ? target : 'index.html';
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        errorBox.classList.remove('show');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Logging in\u2026';
+
+        Api.post('/auth/login', {
+          email: document.getElementById('login-email').value.trim(),
+          password: document.getElementById('login-password').value
+        }).then(function () {
+          window.location.href = redirectTarget();
+        }).catch(function (err) {
+          errorBox.textContent = err.message || 'Login failed.';
+          errorBox.classList.add('show');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Log In';
+        });
+      });
+    });
+  </script>
+</body>
+</html>

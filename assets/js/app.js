@@ -1,6 +1,11 @@
 /* ============================================================
    app.js — public site behaviour
    blog.skoolyst.com
+
+   Section 11 rewire: every page fetches from the real /api/v1
+   backend (via api.js's Api.*) instead of reading MOCK_* arrays.
+   mock-data.js is still loaded (Section 12 removes it later) but
+   only its escapeHtml()/formatDate() helpers are used here now.
    ============================================================ */
 
 (function () {
@@ -40,6 +45,11 @@
   /* Backwards-compatible public alias for the shared post-card component. */
   window.renderPostCard = Card.post;
 
+  /* ---- Empty/error state helper ---- */
+  function stateBlock(icon, title, message) {
+    return '<div class="empty-state"><div class="empty-icon">' + icon + '</div><h3>' + escapeHtml(title) + '</h3><p>' + escapeHtml(message) + '</p></div>';
+  }
+
   /* ---- Render featured (large) card ---- */
   function renderFeaturedCard(post) {
     var card = Card.post(post);
@@ -53,18 +63,21 @@
     var latestContainer = document.getElementById('latest-posts');
     if (!featuredContainer && !latestContainer) return;
 
-    var published = getPublishedPosts();
-    if (featuredContainer) {
-      var feat = published.slice(0, 1);
-      feat.forEach(function (p) { featuredContainer.appendChild(renderFeaturedCard(p)); });
-    }
-    if (latestContainer) {
-      var latest = published.slice(1, 7);
-      latest.forEach(function (p) { latestContainer.appendChild(Card.post(p)); });
-    }
+    Api.get('/posts?per_page=7').then(function (res) {
+      var posts = res.data || [];
+      if (featuredContainer) {
+        posts.slice(0, 1).forEach(function (p) { featuredContainer.appendChild(renderFeaturedCard(p)); });
+        if (posts.length === 0) featuredContainer.innerHTML = stateBlock('\u{1F4DD}', 'No posts yet', 'Check back soon for new articles.');
+      }
+      if (latestContainer) {
+        posts.slice(1, 7).forEach(function (p) { latestContainer.appendChild(Card.post(p)); });
+      }
+    }).catch(function (err) {
+      if (featuredContainer) featuredContainer.innerHTML = stateBlock('\u26a0', 'Couldn\u2019t load posts', err.message);
+    });
   }
 
-  /* ---- Blog archive: list, search, filter, sort, paginate ---- */
+  /* ---- Blog archive: list, search, filter, sort, paginate (server-side) ---- */
   var blogState = { page: 1, perPage: 6, search: '', category: '', sort: 'newest' };
 
   function initBlog() {
@@ -76,22 +89,26 @@
     var sortSelect = document.getElementById('blog-sort');
     var pagination = document.getElementById('blog-pagination');
 
-    function getFiltered() {
-      var posts = getPublishedPosts();
-      if (blogState.search) {
-        var q = blogState.search.toLowerCase();
-        posts = posts.filter(function (p) {
-          return p.title.toLowerCase().indexOf(q) > -1 ||
-            p.excerpt.toLowerCase().indexOf(q) > -1;
+    /* Populate the category filter from the real API (was a hand-rolled
+       inline script reading MOCK_CATEGORIES before). Values are category
+       slugs, matching what PostRepository::publishedPaginated() filters on. */
+    if (catSelect) {
+      Api.get('/categories').then(function (res) {
+        (res.data || []).forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c.slug;
+          opt.textContent = c.name;
+          catSelect.appendChild(opt);
         });
-      }
-      if (blogState.category) {
-        posts = posts.filter(function (p) { return p.category === blogState.category; });
-      }
-      if (blogState.sort === 'newest') {
-        posts.sort(function (a, b) { return new Date(b.publishedDate) - new Date(a.publishedDate); });
-      } else if (blogState.sort === 'oldest') {
-        posts.sort(function (a, b) { return new Date(a.publishedDate) - new Date(b.publishedDate); });
+      }).catch(function () { /* filter just stays at "All categories" */ });
+    }
+
+    function sortPosts(posts) {
+      /* The API only sorts by published date server-side; "oldest"/"views"
+         are applied client-side on the current page, same scope the old
+         mock version had (it only ever sorted within its filtered set). */
+      if (blogState.sort === 'oldest') {
+        posts.sort(function (a, b) { return new Date(a.published_date) - new Date(b.published_date); });
       } else if (blogState.sort === 'views') {
         posts.sort(function (a, b) { return b.views - a.views; });
       }
@@ -99,20 +116,33 @@
     }
 
     function render() {
-      var posts = getFiltered();
-      var totalPages = Math.max(1, Math.ceil(posts.length / blogState.perPage));
-      if (blogState.page > totalPages) blogState.page = totalPages;
-      var start = (blogState.page - 1) * blogState.perPage;
-      var pagePosts = posts.slice(start, start + blogState.perPage);
+      var params = new URLSearchParams();
+      params.set('page', blogState.page);
+      params.set('per_page', blogState.perPage);
+      if (blogState.search) params.set('search', blogState.search);
+      if (blogState.category) params.set('category', blogState.category);
 
-      container.innerHTML = '';
-      if (pagePosts.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u{1F50D}</div><h3>No posts found</h3><p>Try a different search or filter.</p></div>';
-      } else {
-        pagePosts.forEach(function (p) { container.appendChild(Card.post(p)); });
-      }
+      Api.get('/posts?' + params.toString()).then(function (res) {
+        var posts = sortPosts(res.data || []);
+        var totalPages = (res.meta && res.meta.total_pages) || 1;
+        if (blogState.page > totalPages && totalPages > 0) {
+          blogState.page = totalPages;
+          render();
+          return;
+        }
 
-      renderPagination(totalPages);
+        container.innerHTML = '';
+        if (posts.length === 0) {
+          container.innerHTML = stateBlock('\u{1F50D}', 'No posts found', 'Try a different search or filter.');
+        } else {
+          posts.forEach(function (p) { container.appendChild(Card.post(p)); });
+        }
+
+        renderPagination(totalPages);
+      }).catch(function (err) {
+        container.innerHTML = stateBlock('\u26a0', 'Couldn\u2019t load posts', err.message);
+        if (pagination) pagination.innerHTML = '';
+      });
     }
 
     function renderPagination(totalPages) {
@@ -161,7 +191,7 @@
           blogState.search = searchInput.value.trim();
           blogState.page = 1;
           render();
-        }, 200);
+        }, 300);
       });
     }
     if (catSelect) {
@@ -188,25 +218,36 @@
 
     var params = new URLSearchParams(window.location.search);
     var slug = params.get('cat') || '';
-    var cat = MOCK_CATEGORIES.find(function (c) { return c.slug === slug; });
     var titleEl = document.getElementById('category-title');
     var descEl = document.getElementById('category-desc');
 
-    if (!cat) {
+    if (!slug) {
       if (titleEl) titleEl.textContent = 'Category Not Found';
-      container.innerHTML = '<div class="empty-state"><h3>Category not found</h3><p>This category doesn\u2019t exist.</p></div>';
+      container.innerHTML = stateBlock('\u{1F937}', 'Category not found', 'This category doesn\u2019t exist.');
       return;
     }
 
-    if (titleEl) titleEl.textContent = cat.name;
-    if (descEl) descEl.textContent = cat.description;
+    Api.get('/categories/' + encodeURIComponent(slug)).then(function (res) {
+      var cat = res.data;
+      if (titleEl) titleEl.textContent = cat.name;
+      if (descEl) descEl.textContent = cat.description || '';
 
-    var posts = getPostsByCategory(cat.id);
-    if (posts.length === 0) {
-      container.innerHTML = '<div class="empty-state"><h3>No posts yet</h3><p>There are no published posts in this category.</p></div>';
-    } else {
-      posts.forEach(function (p) { container.appendChild(Card.post(p)); });
-    }
+      return Api.get('/posts?category=' + encodeURIComponent(slug) + '&per_page=50').then(function (postsRes) {
+        var posts = postsRes.data || [];
+        if (posts.length === 0) {
+          container.innerHTML = stateBlock('\u{1F4ED}', 'No posts yet', 'There are no published posts in this category.');
+        } else {
+          posts.forEach(function (p) { container.appendChild(Card.post(p)); });
+        }
+      });
+    }).catch(function (err) {
+      if (err.status === 404) {
+        if (titleEl) titleEl.textContent = 'Category Not Found';
+        container.innerHTML = stateBlock('\u{1F937}', 'Category not found', 'This category doesn\u2019t exist.');
+      } else {
+        container.innerHTML = stateBlock('\u26a0', 'Couldn\u2019t load category', err.message);
+      }
+    });
   }
 
   /* ---- Single post page ---- */
@@ -216,9 +257,8 @@
 
     var params = new URLSearchParams(window.location.search);
     var id = params.get('id') || '';
-    var post = getPostById(id);
 
-    if (!post || post.status !== 'published') {
+    function showNotFound() {
       document.getElementById('post-hero').innerHTML = '<h1>Post Not Found</h1><p>This post doesn\u2019t exist or isn\u2019t published yet.</p>';
       document.getElementById('post-cover-wrap').style.display = 'none';
       document.getElementById('post-body').style.display = 'none';
@@ -227,81 +267,85 @@
       document.getElementById('share-row').style.display = 'none';
       document.getElementById('comments-section').style.display = 'none';
       document.getElementById('related-posts').style.display = 'none';
+    }
+
+    if (!id || !/^\d+$/.test(id)) {
+      showNotFound();
       return;
     }
 
-    var cat = getCategoryById(post.category);
-    var author = getAuthorById(post.author);
+    Api.get('/posts/' + id).then(function (res) {
+      var post = res.data;
 
-    document.title = post.title + ' \u2014 Skoolyst Blog';
+      Api.post('/posts/' + id + '/view', {}).catch(function () { /* view counting is best-effort */ });
 
-    var heroEl = document.getElementById('post-hero');
-    heroEl.innerHTML =
-      '<span class="post-chip" style="background:' + cat.color + '15;color:' + cat.color + '">' + escapeHtml(cat.name) + '</span>' +
-      '<h1>' + escapeHtml(post.title) + '</h1>' +
-      '<div class="post-meta">' +
-        '<img src="' + author.avatar + '" alt="' + escapeHtml(author.name) + '" />' +
-        '<span>' + escapeHtml(author.name) + '</span>' +
-        '<span class="meta-dot"></span>' +
-        '<span>' + escapeHtml(formatDate(post.publishedDate)) + '</span>' +
-        '<span class="meta-dot"></span>' +
-        '<span>' + post.readTimeMinutes + ' min read</span>' +
-        '<span class="meta-dot"></span>' +
-        '<span>' + post.views.toLocaleString() + ' views</span>' +
-      '</div>';
+      var cat = post.category || {};
 
-    var coverWrap = document.getElementById('post-cover-wrap');
-    coverWrap.innerHTML = '<img src="' + post.coverImage + '" alt="' + escapeHtml(post.title) + '" />';
+      document.title = post.title + ' \u2014 Skoolyst Blog';
 
-    var bodyEl = document.getElementById('post-body');
-    bodyEl.innerHTML = renderBody(post.body);
+      var heroEl = document.getElementById('post-hero');
+      heroEl.innerHTML =
+        '<span class="post-chip" style="background:' + (cat.color || '#4361ee') + '15;color:' + (cat.color || '#4361ee') + '">' + escapeHtml(cat.name || 'Uncategorized') + '</span>' +
+        '<h1>' + escapeHtml(post.title) + '</h1>' +
+        '<div class="post-meta">' +
+          '<span>' + escapeHtml(post.author_name || 'Skoolyst') + '</span>' +
+          '<span class="meta-dot"></span>' +
+          '<span>' + escapeHtml(formatDate(post.published_date)) + '</span>' +
+          '<span class="meta-dot"></span>' +
+          '<span>' + Card.readTime(post.body) + ' min read</span>' +
+          '<span class="meta-dot"></span>' +
+          '<span>' + post.views.toLocaleString() + ' views</span>' +
+        '</div>';
 
-    var tagsEl = document.getElementById('post-tags');
-    if (post.tags && post.tags.length) {
-      tagsEl.innerHTML = post.tags.map(function (t) {
-        return '<span class="tag">' + escapeHtml(t) + '</span>';
-      }).join('');
-    } else {
+      var coverWrap = document.getElementById('post-cover-wrap');
+      if (post.cover_image) {
+        coverWrap.innerHTML = '<img src="' + post.cover_image + '" alt="' + escapeHtml(post.title) + '" />';
+      } else {
+        coverWrap.style.display = 'none';
+      }
+
+      var bodyEl = document.getElementById('post-body');
+      bodyEl.innerHTML = renderBody(post.body);
+
+      /* The backend doesn't store/return post tags yet (Post::toArray() has
+         no tags field) — hide the tags row rather than show stale/fake data. */
+      var tagsEl = document.getElementById('post-tags');
       tagsEl.style.display = 'none';
-    }
 
-    var authorEl = document.getElementById('author-block');
-    authorEl.innerHTML =
-      '<img src="' + author.avatar + '" alt="' + escapeHtml(author.name) + '" />' +
-      '<div>' +
-        '<p class="author-name">' + escapeHtml(author.name) + '</p>' +
-        '<p class="author-bio">' + escapeHtml(author.bio) + '</p>' +
-      '</div>';
+      var authorEl = document.getElementById('author-block');
+      authorEl.innerHTML =
+        '<div>' +
+          '<p class="author-name">' + escapeHtml(post.author_name || 'Skoolyst') + '</p>' +
+        '</div>';
 
-    /* Related posts */
-    var relatedEl = document.getElementById('related-posts');
-    var related = getRelatedPosts(post, 3);
-    if (related.length > 0) {
-      var grid = document.createElement('div');
-      grid.className = 'post-grid';
-      related.forEach(function (p) { grid.appendChild(Card.post(p)); });
-      relatedEl.appendChild(grid);
-    } else {
-      relatedEl.style.display = 'none';
-    }
+      /* Related posts: other published posts in the same category. */
+      var relatedEl = document.getElementById('related-posts');
+      if (post.category_id) {
+        Api.get('/posts?category=' + encodeURIComponent(cat.slug) + '&per_page=4').then(function (relRes) {
+          var related = (relRes.data || []).filter(function (p) { return p.id !== post.id; }).slice(0, 3);
+          if (related.length > 0) {
+            var grid = document.createElement('div');
+            grid.className = 'post-grid';
+            related.forEach(function (p) { grid.appendChild(Card.post(p)); });
+            relatedEl.appendChild(grid);
+          } else {
+            relatedEl.style.display = 'none';
+          }
+        }).catch(function () { relatedEl.style.display = 'none'; });
+      } else {
+        relatedEl.style.display = 'none';
+      }
 
-    /* Comments */
-    renderComments(post.id);
-
-    /* Comment form */
-    var commentForm = document.getElementById('comment-form-el');
-    if (commentForm) {
-      commentForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var textarea = commentForm.querySelector('textarea');
-        if (!textarea.value.trim()) {
-          window.showToast('Please write a comment first.', 'error');
-          return;
-        }
-        window.showToast('Comment submitted! It will appear once approved. (Demo only \u2014 no backend)', 'success');
-        textarea.value = '';
-      });
-    }
+      /* Comments (embedded in the post response) + submission form */
+      renderComments(post.comments || []);
+      wireCommentForm(post.id);
+    }).catch(function (err) {
+      if (err.status === 404) {
+        showNotFound();
+      } else {
+        document.getElementById('post-hero').innerHTML = '<h1>Couldn\u2019t load this post</h1><p>' + escapeHtml(err.message) + '</p>';
+      }
+    });
   }
 
   /* ---- Render markdown-ish body ---- */
@@ -323,21 +367,19 @@
   window.renderBody = renderBody;
 
   /* ---- Comments ---- */
-  function renderComments(postId) {
+  function renderComments(comments) {
     var container = document.getElementById('comments-list');
     if (!container) return;
-    var comments = MOCK_COMMENTS.filter(function (c) { return c.postId === postId; });
     if (comments.length === 0) {
       container.innerHTML = '<p style="color:var(--text-muted)">No comments yet. Be the first to share your thoughts.</p>';
       return;
     }
     container.innerHTML = comments.map(function (c) {
       return '<div class="comment">' +
-        '<img src="' + c.avatar + '" alt="' + escapeHtml(c.author) + '" loading="lazy" />' +
         '<div>' +
           '<div class="comment-head">' +
-            '<span class="comment-author">' + escapeHtml(c.author) + '</span>' +
-            '<span class="comment-date">' + escapeHtml(formatDate(c.date)) + '</span>' +
+            '<span class="comment-author">' + escapeHtml(c.author_name) + '</span>' +
+            '<span class="comment-date">' + escapeHtml(formatDate(c.created_at)) + '</span>' +
           '</div>' +
           '<p class="comment-body">' + escapeHtml(c.body) + '</p>' +
         '</div>' +
@@ -345,7 +387,43 @@
     }).join('');
   }
 
-  /* ---- Contact form validation ---- */
+  /* Submitting posts to POST /posts/{id}/comments, which requires a name
+     + email the old demo-only form never collected — added here since
+     there's no way to satisfy that validation without them. */
+  function wireCommentForm(postId) {
+    var commentForm = document.getElementById('comment-form-el');
+    if (!commentForm) return;
+    var textarea = commentForm.querySelector('textarea');
+    var nameInput = commentForm.querySelector('[name="comment-name"]');
+    var emailInput = commentForm.querySelector('[name="comment-email"]');
+    var submitBtn = commentForm.querySelector('button[type="submit"]');
+
+    commentForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!nameInput.value.trim() || !emailInput.value.trim() || !textarea.value.trim()) {
+        window.showToast('Please fill in your name, email, and a comment.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      Api.post('/posts/' + postId + '/comments', {
+        author_name: nameInput.value.trim(),
+        author_email: emailInput.value.trim(),
+        body: textarea.value.trim()
+      }).then(function () {
+        window.showToast('Comment submitted! It will appear once approved.', 'success');
+        textarea.value = '';
+        nameInput.value = '';
+        emailInput.value = '';
+      }).catch(function (err) {
+        window.showToast(err.message || 'Could not submit comment.', 'error');
+      }).finally(function () {
+        submitBtn.disabled = false;
+      });
+    });
+  }
+
+  /* ---- Contact form validation (no backend endpoint for this yet \u2014 stays demo-only) ---- */
   function initContactForm() {
     var form = document.getElementById('contact-form-el');
     if (!form) return;
@@ -375,7 +453,7 @@
     });
   }
 
-  /* ---- Newsletter forms ---- */
+  /* ---- Newsletter forms (no backend endpoint for this yet \u2014 stays demo-only) ---- */
   function initNewsletter() {
     var forms = document.querySelectorAll('.newsletter form, .hero-search');
     forms.forEach(function (form) {

@@ -310,7 +310,7 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 
 ## 8. API (`/api/v1/...`, not started)
 
-**Public:** `GET /posts` (pagination, category/search filter, published-only), `GET /posts/{id}`, `GET /categories`, `POST /posts/{id}/comments` (validated, saved pending, rate-limited), `POST /posts/{id}/view`
+**Public:** `GET /posts` (pagination, category/search filter, published-only), `GET /posts/{id}`, `GET /categories`, `POST /posts/{id}/comments` (validated, saved pending, rate-limited), `POST /posts/{id}/view`, `GET /authors`, `GET /authors/{id}` (added in Section 12 — the about.html team section needed a real endpoint instead of `mock-data.js`, not originally scoped here)
 
 **Auth:** `POST /auth/login`, `POST /auth/logout` (isolated blog session)
 
@@ -322,11 +322,12 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 - [x] Auth API implemented
 - [x] Author API implemented — own-post CRUD + cover-image upload
 - [x] Admin API implemented — Posts, Categories, Comments, Media
+- [x] Public Authors API implemented — read-only team listing (added in Section 12, not original scope)
 
 ## 9. Application Modules (done)
 
 ```text
-app/{Posts,Categories,Comments,Media,Auth}/
+app/{Posts,Categories,Comments,Media,Auth,Authors}/
 ```
 Each module: Controller, Repository, Model, Validator (where needed), Routes, auth/authorization, error handling, tests. Don't create classes a module doesn't need.
 
@@ -351,6 +352,11 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
   - **Why:** Media only needed to exist once something (Posts' cover image) actually consumed an upload — building it last matches Development Order's "Core modules" step and avoids a speculative upload handler no route used yet.
   - **Tested:** Live tested with real JPEG/PNG bytes (not just renamed text) — `/admin/media` upload/list/update/delete 401s logged-out and 403s a non-admin; a real image round-trips (uploaded file is actually fetchable at its returned URL, confirming the `public/` docroot path is correct, not just recorded in the DB); a `.txt` disguised as a file upload is rejected by real MIME sniffing; delete 409s while a post's `cover_image` still points at it, then succeeds (and the file is actually gone from disk) once that post's cover is cleared; author cover-image upload updates the post and creates a library row; uploading to another author's post 403s; missing file / unknown id return 422/404 correctly.
 - [x] Auth module — `app/Auth/{Model,Repository,Middleware,Controller}.php`; `AuthMiddleware::requireUser()`/`::requireAdmin()` ready for Author/Admin modules to call
+- [x] Authors module — `app/Authors/{Model,Repository,Controller}.php`, `routes/api/authors.php` (added during Section 12, not an original Dev Order module)
+  - **What:** `GET /authors` and `GET /authors/{id}` — public, read-only, no Validator (nothing is written). Returns only `id`, `name`, `avatar_url`, `bio` for `blog_users` rows where `role = 'author' AND status = 'active'` — admin accounts and suspended authors never appear, and `email`/`password_hash`/`role`/`status` are never exposed (`AuthRepository`'s own docblock says other modules should read `blog_users` directly for display info rather than growing Auth itself, so this is its own module rather than a new Auth endpoint). Needed a schema change: `blog_users.bio` (nullable `TEXT`) didn't exist — added via `0011_add_bio_to_blog_users.sql` — since the mock team bios had no backing column.
+  - **Where:** `app/Authors/*.php`, `routes/api/authors.php` (registered in `routes/api.php` right after `auth.php`), `database/migrations/0011_add_bio_to_blog_users.sql`. `bin/seed.php` updated to seed each mock author's `bio` alongside the fields it already set.
+  - **Why:** `about.html`'s Team section was the one piece of Section 12 with no backend equivalent — it read `MOCK_AUTHORS[].bio`/`.avatar` directly, and neither a `bio` column nor any public author-listing endpoint existed yet. Rather than hardcode the bios as static HTML (which would've meant editing a deployed file every time a writer's bio changes), this stood up the minimal real endpoint the page needed.
+  - **Tested:** Live tested (local MariaDB + PHP built-in server) after re-running `migrate.php` + `seed.php --fresh`: `GET /authors` returns exactly the 4 seeded authors (not the seeded admin), sorted by name, each with a non-null `avatar_url` and `bio`. `GET /authors/{id}` returns 200 for a real author id, and 404 for both the admin's id and a nonexistent id (confirming the `role`/`status` filter applies to the single-row lookup too, not just the list). `GET /posts` and `GET /categories` re-checked afterward to confirm the fresh reseed didn't disturb anything else.
 
 ## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
@@ -376,7 +382,11 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
   - **Where:** `bin/seed.php` (new).
   - **Why:** Real seeded rows are what the rest of Section 12 needs before the frontend can be pointed at the live API instead of `mock-data.js` — this step exists specifically so `blog.html`/`dashboard/*.html` have the same demo content to render as they always have, just served from the database instead of a hardcoded JS array.
   - **Tested:** Live tested (local MariaDB + PHP built-in server) after `php bin/migrate.php` + `php bin/seed.php`: row counts confirmed by direct query (5 users incl. 1 admin, 5 categories, 12 posts, 3 comments, 8 media, 55 view-day rows — 5 days × 11 published posts, the 1 draft excluded). `GET /categories` returns correct `post_count` per category (2/2/2/4/2 = 12). `GET /posts` and `GET /posts/{id}` return the seeded content, with the 3 seeded comments correctly embedded on post id 1. `POST /auth/login` succeeds for a seeded author and the seeded admin with the printed seed password, and fails for a wrong password. `GET /admin/posts` returns data for the logged-in admin, 401 logged-out, 403 for a logged-in non-admin author. `GET /admin/media` lists all 8 seeded items with correct `uploaded_by`. Fixed two real issues found this way: the script's own idempotency check originally gated the *entire* seed run behind one `blog_users` count check, so a partial prior run (users+categories landed, posts didn't) caused every later run to skip everything else — replaced with per-section existence checks so it resumes correctly; and this container was missing the `php-mbstring` extension, which `Str::slugify()` needs (fixed by installing it — no code change).
-- [ ] Switch frontend off `mock-data.js`
+- [x] Switch frontend off `mock-data.js`
+  - **What:** Removed the `<script src="...mock-data.js">` tag from every page that had it (`blog.html`, `index.html`, `category.html`, `post.html`, `contact.html`, `about.html`, and all five `dashboard/*.html` pages) — none of them read `MOCK_*` variables anymore (`app.js`/`dashboard.js` only mention `MOCK_*` in explanatory comments, not code). The one real holdout was `about.html`'s Team section, which read `MOCK_AUTHORS[].avatar`/`.bio` directly — that's what the new Authors module (above) exists for; its inline script now calls `Api.get('/authors')` instead, keeping the same per-author role-title labels (now keyed by name instead of the mock's `a1`-`a4` keys, since the API has no equivalent of those).
+  - **Where:** `about.html`, `blog.html`, `index.html`, `category.html`, `post.html`, `contact.html`, `dashboard/{index,posts,post-editor,categories,media}.html`, `assets/js/api.js` (stale "Load order: mock-data.js -> ..." comment corrected).
+  - **Why:** This is the actual point of Section 12 — every page had been carrying a dead `<script>` tag (and, on `about.html`, a real remaining dependency) since Section 11's frontend/API wiring landed; nothing was verified to be safe to delete until now.
+  - **Tested:** Live tested — confirmed via `grep` that no `.html` file references `mock-data.js` or `MOCK_` after the change (only the untouched `assets/js/mock-data.js` file itself still contains its own `MOCK_*` definitions, per the next checkbox). `about.html`'s new script has no syntax errors and its `Api.get('/authors')` call was verified against the live endpoint (see Authors module above) — 4 authors returned in the same shape the rendering code expects (`avatar_url`, `name`, `bio`).
 - [ ] Remove `mock-data.js` only after API migration is verified
 
 ## 13. Auth & Security (in progress)

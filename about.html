@@ -114,28 +114,33 @@
     </div>
   </footer>
 
-  <script src="assets/js/mock-data.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       var grid = document.getElementById('team-grid');
+      /* Display-only labels — not stored in the DB, keyed by name since
+         the /authors API has no "role title" concept of its own. */
       var roles = {
-        a1: 'Lead Content Strategist',
-        a2: 'EdTech Writer',
-        a3: 'Online Learning Editor',
-        a4: 'Education Policy Writer'
+        'Sarah Chen': 'Lead Content Strategist',
+        'Marcus Johnson': 'EdTech Writer',
+        'Priya Patel': 'Online Learning Editor',
+        'David Kim': 'Education Policy Writer'
       };
-      MOCK_AUTHORS.forEach(function (a) {
-        var card = document.createElement('div');
-        card.className = 'team-card';
-        card.innerHTML =
-          '<img src="' + a.avatar + '" alt="' + escapeHtml(a.name) + '" loading="lazy" />' +
-          '<p class="team-name">' + escapeHtml(a.name) + '</p>' +
-          '<p class="team-role">' + escapeHtml(roles[a.id] || 'Writer') + '</p>' +
-          '<p class="team-bio">' + escapeHtml(a.bio) + '</p>';
-        grid.appendChild(card);
+      Api.get('/authors').then(function (res) {
+        (res.data || []).forEach(function (a) {
+          var card = document.createElement('div');
+          card.className = 'team-card';
+          card.innerHTML =
+            '<img src="' + a.avatar_url + '" alt="' + escapeHtml(a.name) + '" loading="lazy" />' +
+            '<p class="team-name">' + escapeHtml(a.name) + '</p>' +
+            '<p class="team-role">' + escapeHtml(roles[a.name] || 'Writer') + '</p>' +
+            '<p class="team-bio">' + escapeHtml(a.bio || '') + '</p>';
+          grid.appendChild(card);
+        });
+      }).catch(function () {
+        grid.innerHTML = '<p class="team-error">Unable to load team members right now.</p>';
       });
     });
   </script>

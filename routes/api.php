@@ -19,6 +19,7 @@ $router->get('/health', function (Request $request) {
 });
 
 require_once __DIR__ . '/api/auth.php';
+require_once __DIR__ . '/api/authors.php';
 require_once __DIR__ . '/api/categories.php';
 require_once __DIR__ . '/api/posts.php';
 require_once __DIR__ . '/api/comments.php';

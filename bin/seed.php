@@ -71,12 +71,16 @@ $seedPassword = 'Seed@12345';
 $passwordHash = password_hash($seedPassword, PASSWORD_DEFAULT);
 
 $authorSeeds = [
-    'a1' => ['name' => 'Sarah Chen',      'email' => 'sarah.chen@skoolyst.com',   'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=47'],
-    'a2' => ['name' => 'Marcus Johnson',  'email' => 'marcus.johnson@skoolyst.com', 'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=12'],
-    'a3' => ['name' => 'Priya Patel',     'email' => 'priya.patel@skoolyst.com',  'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=45'],
-    'a4' => ['name' => 'David Kim',       'email' => 'david.kim@skoolyst.com',    'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=33'],
+    'a1' => ['name' => 'Sarah Chen',      'email' => 'sarah.chen@skoolyst.com',   'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=47',
+        'bio' => "Sarah is Skoolyst's lead content strategist. She writes about digital pedagogy, curriculum design, and the future of classroom technology."],
+    'a2' => ['name' => 'Marcus Johnson',  'email' => 'marcus.johnson@skoolyst.com', 'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=12',
+        'bio' => 'Marcus is a former high-school math teacher turned edtech writer. He focuses on STEM engagement and data-driven instruction.'],
+    'a3' => ['name' => 'Priya Patel',     'email' => 'priya.patel@skoolyst.com',  'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=45',
+        'bio' => "Priya covers online learning trends and the student experience. She holds a Master's in Instructional Design."],
+    'a4' => ['name' => 'David Kim',       'email' => 'david.kim@skoolyst.com',    'role' => 'author', 'avatar_url' => 'https://i.pravatar.cc/150?img=33',
+        'bio' => 'David writes about education policy, funding, and the business of learning. He previously covered K-12 for a national outlet.'],
 ];
-$adminSeed = ['name' => 'Blog Admin', 'email' => 'admin@skoolyst.com', 'role' => 'admin', 'avatar_url' => null];
+$adminSeed = ['name' => 'Blog Admin', 'email' => 'admin@skoolyst.com', 'role' => 'admin', 'avatar_url' => null, 'bio' => null];
 
 $authorIds = []; // mock key ('a1'..'a4') => real blog_users.id
 foreach ($authorSeeds as $key => $u) {
@@ -86,8 +90,8 @@ foreach ($authorSeeds as $key => $u) {
         continue;
     }
     Database::execute(
-        'INSERT INTO blog_users (name, email, password_hash, role, status, avatar_url) VALUES (?, ?, ?, ?, ?, ?)',
-        [$u['name'], $u['email'], $passwordHash, $u['role'], 'active', $u['avatar_url']]
+        'INSERT INTO blog_users (name, email, password_hash, role, status, avatar_url, bio) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [$u['name'], $u['email'], $passwordHash, $u['role'], 'active', $u['avatar_url'], $u['bio']]
     );
     $authorIds[$key] = (int) Database::lastInsertId();
 }
@@ -97,8 +101,8 @@ if ($adminRow) {
     $adminId = (int) $adminRow['id'];
 } else {
     Database::execute(
-        'INSERT INTO blog_users (name, email, password_hash, role, status, avatar_url) VALUES (?, ?, ?, ?, ?, ?)',
-        [$adminSeed['name'], $adminSeed['email'], $passwordHash, $adminSeed['role'], 'active', $adminSeed['avatar_url']]
+        'INSERT INTO blog_users (name, email, password_hash, role, status, avatar_url, bio) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [$adminSeed['name'], $adminSeed['email'], $passwordHash, $adminSeed['role'], 'active', $adminSeed['avatar_url'], $adminSeed['bio']]
     );
     $adminId = (int) Database::lastInsertId();
 }

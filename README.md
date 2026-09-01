@@ -94,6 +94,7 @@ blog.skoolyst.com
 ```
 
 - Own PHP app, own `blog_*` tables, own session — **no relationship** (no joins/FKs) with `ads.skoolyst.com` or `teachers.skoolyst.com` tables. All three are independent applications sharing a design language, not a database.
+- The frontend pages are currently plain `.html` with duplicated nav/sidebar/footer markup per page; Section 13 converts them to `.php` with shared header/footer/sidebar partials. This is a templating change only — the browser still receives static-looking HTML and the same JS still calls `/api/v1/...` exactly as today.
 
 ---
 
@@ -362,7 +363,7 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
 - [x] Module route files (`routes/api/posts.php` etc.) — all five built: `auth.php`, `categories.php`, `posts.php`, `comments.php`, `media.php`
-- [x] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` now guards every non-public route: `/auth/me`, `/admin/categories/*`, Posts' `/author/*`+`/admin/*`, `/admin/comments/*`, `/admin/media/*`
+- [x] Auth + admin middleware applied to routes (depends on Section 14) — `AuthMiddleware` now guards every non-public route: `/auth/me`, `/admin/categories/*`, Posts' `/author/*`+`/admin/*`, `/admin/comments/*`, `/admin/media/*`
 
 ## 11. Frontend → API Integration
 - [x] Public frontend wired to API — `assets/js/app.js`, new `assets/js/api.js`
@@ -389,28 +390,42 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
   - **Tested:** Live tested — confirmed via `grep` that no `.html` file references `mock-data.js` or `MOCK_` after the change (only the untouched `assets/js/mock-data.js` file itself still contains its own `MOCK_*` definitions, per the next checkbox). `about.html`'s new script has no syntax errors and its `Api.get('/authors')` call was verified against the live endpoint (see Authors module above) — 4 authors returned in the same shape the rendering code expects (`avatar_url`, `name`, `bio`).
 - [ ] Remove `mock-data.js` only after API migration is verified
 
-## 13. Auth & Security (in progress)
+## 13. Frontend PHP Conversion & Shared Layout (not started)
+
+Every page currently repeats the same `<head>`, top nav, sidebar (dashboard pages), and footer markup by hand — e.g. `blog.html`/`index.html`/`category.html`/`post.html`/`about.html`/`contact.html` each carry their own copy of the public nav+footer, and every `dashboard/*.html` page carries its own copy of the dashboard sidebar. Editing any shared piece (a nav link, a footer year, a sidebar menu item) currently means editing it in every file by hand and hoping none got missed. This section converts the static `.html` pages to `.php` with a shared layout include system, so each page's own markup is the only thing that page-file contains.
+
+This does **not** change Section 1's "static frontend / PHP API" split at the network level — the browser still gets rendered HTML and the same JS still calls `/api/v1/...` exactly as it does today. It only changes how that HTML is assembled server-side: PHP `include`/`require` composing shared partials instead of every page duplicating the same markup, which is a templating concern, not a framework.
+
+- [ ] Shared partials for the **public site**: `header.php` (`<head>` + top nav) and `footer.php`, included by `index.php`, `blog.php`, `category.php`, `post.php`, `about.php`, `contact.php` (renamed from their current `.html`)
+- [ ] Shared partials for the **dashboard**: its own `header.php` (`<head>` + topbar) and `sidebar.php`, included by `dashboard/index.php`, `dashboard/posts.php`, `dashboard/post-editor.php`, `dashboard/categories.php`, `dashboard/media.php` — kept separate from the public partials since the two layouts share no markup (no public nav on dashboard pages, no sidebar on public pages)
+- [ ] Per-page `<title>`/meta and the page's own body content stay in that page's `.php` file — only the truly repeated chrome (nav/sidebar/footer) moves into a partial
+- [ ] `.htaccess` and internal links updated for the `.html` → `.php` rename (old `.html` URLs should not 404 — redirect or keep serving via a rewrite, decide during implementation)
+- [ ] Convert one page from each layout first (e.g. `about.php` for public, `dashboard/categories.php` for dashboard) as a proof of concept, live-test it renders identically before converting the rest
+- [ ] Convert the remaining pages once the two proof-of-concept layouts are confirmed working
+- [ ] Live-test every converted page after the full conversion: renders identically to its old `.html` version, no broken asset paths (`assets/...` vs `../assets/...` differs between root pages and `dashboard/*` — the partials must account for this), no console errors, all existing JS/API calls still work unchanged
+
+## 14. Auth & Security (in progress)
 - [x] Password hashing, login/logout, session regeneration — `password_hash`/`password_verify`, `AuthMiddleware::login()` regenerates the session ID on login, `Session::destroy()` on logout
 - [x] Unique blog session name (no conflicts with other Skoolyst apps) — `config('app.session_name')` = `blog_skoolyst_session`, applied via `core/Session.php`
 - [ ] Author ownership checks, admin authorization — `AuthMiddleware::requireAdmin()` exists and is tested; per-resource ownership checks land with the Posts module
 - [ ] Input validation, prepared statements, upload MIME/size limits
 - [ ] API rate limiting, comment spam protection, admin action audit log
 
-## 14. Media Uploads (not started)
+## 15. Media Uploads (not started)
 - [ ] `public/uploads/media/` with writable perms
 - [ ] MIME/size validation, safe filenames, block executables
 - [ ] Cover image upload, media library upload/delete
 
-## 15. Testing (not started)
+## 16. Testing (not started)
 - [ ] Backend: DB, migrations, seeders, auth, all API groups, validation, errors, rate limiting
 - [ ] Frontend: every public page + every dashboard flow, plus no regression after Section 5's component refactor
 - [ ] Cross-app isolation: no shared tables/sessions/FKs with `ads`/`teachers`, no data leakage across APIs
 
-## 16. Production Deployment (not started)
+## 17. Production Deployment (not started)
 - [ ] Production `.env` + DB, migrations/seeders, Apache + `.htaccess`, `/api/v1` routing, upload dir, error logging off in prod, HTTPS
 - [ ] Smoke test: API, frontend, dashboard login, media uploads, DB perms
 
-## 17. Final Cleanup (not started)
+## 18. Final Cleanup (not started)
 - [ ] Remove unused mock/debug code, test credentials
 - [ ] Confirm `.env` not committed, verify security settings & indexes
 - [ ] Verify mobile responsiveness
@@ -423,7 +438,8 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
 ```text
 1. Foundation → 2. Database → 3. Frontend components → 4. Core modules
 → 5. API → 6. Auth → 7. Frontend/API integration → 8. Mock-data migration
-→ 9. Security → 10. Testing → 11. Deployment → 12. Cleanup
+→ 8.5. Frontend PHP conversion + shared layout → 9. Security → 10. Testing
+→ 11. Deployment → 12. Cleanup
 ```
 
 Work one small task at a time: implement → test → check it off here → move on. Never check off something untested.

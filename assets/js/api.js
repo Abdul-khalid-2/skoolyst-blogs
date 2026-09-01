@@ -9,7 +9,7 @@
    with an Error (err.status, err.errors) otherwise — callers
    don't need to touch res.ok / res.json() themselves.
 
-   Load order: api.js -> components.js -> app.js / dashboard.js
+   Load order: utils.js -> api.js -> components.js -> app.js / dashboard.js
    ============================================================ */
 
 (function () {

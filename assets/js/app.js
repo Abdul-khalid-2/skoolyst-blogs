@@ -4,8 +4,7 @@
 
    Section 11 rewire: every page fetches from the real /api/v1
    backend (via api.js's Api.*) instead of reading MOCK_* arrays.
-   mock-data.js is still loaded (Section 12 removes it later) but
-   only its escapeHtml()/formatDate() helpers are used here now.
+   Only escapeHtml()/formatDate() (now in utils.js) are used here.
    ============================================================ */
 
 (function () {

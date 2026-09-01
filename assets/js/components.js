@@ -7,7 +7,7 @@
    plain JS functions here since this frontend is static /
    mock-data driven rather than server-rendered.
 
-   Load order: mock-data.js (escapeHtml/formatDate) -> api.js -> components.js -> app.js / dashboard.js
+   Load order: utils.js (escapeHtml/formatDate) -> api.js -> components.js -> app.js / dashboard.js
    ============================================================ */
 
 var Badge = {

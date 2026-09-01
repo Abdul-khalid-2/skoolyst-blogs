@@ -127,7 +127,7 @@ The repo currently contains **only the static frontend prototype** — it's UI/m
   - **Why:** README requires every table under this app to be `blog_`-prefixed with zero cross-app foreign keys (isolation from `ads`/`teachers`). Actually spun up a local MariaDB instance to run the migrations twice (second run correctly no-ops) and checked `information_schema` to confirm no FK ever points outside `blog_*` — not just written and assumed correct.
 - [x] Frontend component architecture — `Badge`, `Card` (including public post cards), `Button`, `Table`, `InputField`/`FormGroup`, and `Modal` all implemented and regression-verified across all 11 pages (Section 5)
 - [x] Auth module + session-based authentication (Section 9/13) — `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` live and tested against `blog_users`
-- [ ] `/api/v1/...` — health check + auth endpoints live; Posts/Categories/Comments/Media endpoints not started
+- [x] `/api/v1/...` — health check, auth, Posts, Categories, Comments, and Media endpoints all live (Section 9)
 - [ ] Dashboard is still unprotected (hardcoded "Sarah Chen" user) — Section 11 will wire the dashboard's own login screen to the new `/auth/*` endpoints
 
 ## 3. File Structure — Fixes Applied This Session
@@ -260,7 +260,7 @@ Shared component functions live in `assets/js/components.js`, loaded on every pa
 - [x] `core/Router.php` — path-param routing (`{id}`), 404/405 handling
 - [x] `index.php` — front controller, wires everything above, dispatches `/api/v1/*`
 - [ ] Auth middleware, authorization middleware (needs `blog_users`/sessions — Section 7/13)
-- [ ] CSRF protection, rate limiter, upload handler, audit log helper
+- [ ] CSRF protection, rate limiter (Comments module's own double-submit check is a stand-in, not this), audit log helper — `core/Upload.php` (upload handler) done in Section 9's Media module
 - [x] Centralized error handling → JSON error responses (`set_exception_handler` in `index.php`)
 
 ### Configuration
@@ -318,12 +318,12 @@ Migration files live in `database/migrations/*.sql`, numbered and run in order. 
 
 **Admin:** full CRUD on `/admin/posts`, `/admin/comments`, `/admin/media`, `/admin/categories`
 
-- [ ] Public API implemented — Posts + Categories + Comments (submit) done; nothing else pending here
+- [x] Public API implemented — Posts, Categories, Comments (submit)
 - [x] Auth API implemented
-- [ ] Author API implemented — Posts done (`/author/posts`); image upload (`POST /author/posts/{id}/image`) pending Media module
-- [ ] Admin API implemented — Posts + Categories + Comments done; Media pending
+- [x] Author API implemented — own-post CRUD + cover-image upload
+- [x] Admin API implemented — Posts, Categories, Comments, Media
 
-## 9. Application Modules (in progress)
+## 9. Application Modules (done)
 
 ```text
 app/{Posts,Categories,Comments,Media,Auth}/
@@ -345,14 +345,18 @@ Each module: Controller, Repository, Model, Validator (where needed), Routes, au
   - **Where:** `app/Comments/*.php`, `routes/api/comments.php`, required from `routes/api.php` after `posts.php` (`PostController::show()` calls `CommentRepository::approvedForPost()`).
   - **Why:** Comments only makes sense once Posts exists to attach to; embedding into the post response instead of inventing an undocumented list endpoint keeps the API surface matching what Section 8 actually specified.
   - **Tested:** Live tested — a fresh post's `comments` array is empty; a submitted comment stays invisible in that array until an admin approves it, then appears (without `author_email`); resubmitting the same email on the same post within 30s returns 429; commenting on a missing/draft post 404s; missing/invalid fields 422; `/admin/comments` correctly 401s logged-out and 403s a non-admin; approve/spam/delete and the `status` filter all work; an unknown comment id 404s and an invalid `status` value 422s.
-- [ ] Media module
+- [x] Media module — `app/Media/{Model,Repository,Controller}.php`, `core/Upload.php` (new), `routes/api/media.php`
+  - **What:** `core/Upload.php` is the shared upload handler Section 6 flagged as pending — validates real size/MIME (via `finfo`, not the client-supplied type), generates a random filename, and moves the file into `public/uploads/media/` (that folder + its `.gitkeep` predate this module, from Section 6's scaffold). `GET/POST/PATCH/DELETE /admin/media` is the general library (admin-only). A post's own cover image goes through a separate endpoint instead — `POST /author/posts/{id}/image` (Section 8's Author API) — which uploads via the same `Upload` class, still logs a `blog_media` row so it shows up in the library too, and is ownership-checked the same way `authorUpdate`/`authorDestroy` already are. Deleting a library item is blocked with a 409 if any post still uses it as `cover_image` (same guard shape as Categories' delete-in-use check), and only removes the file from disk once the DB row is actually deleted.
+  - **Where:** `app/Media/*.php`, `core/Upload.php`, `core/Request.php` (added `Request::file()` + populated `$_FILES`), `routes/api/media.php`, the new `/author/posts/{id}/image` route in `routes/api/posts.php`. Switched every route file (and `index.php`) from `require` to `require_once` — `Media/Model.php`/`Media/Repository.php` are now loaded from both `posts.php` and `media.php`, and plain `require` would've fatal-errored on the second declaration.
+  - **Why:** Media only needed to exist once something (Posts' cover image) actually consumed an upload — building it last matches Development Order's "Core modules" step and avoids a speculative upload handler no route used yet.
+  - **Tested:** Live tested with real JPEG/PNG bytes (not just renamed text) — `/admin/media` upload/list/update/delete 401s logged-out and 403s a non-admin; a real image round-trips (uploaded file is actually fetchable at its returned URL, confirming the `public/` docroot path is correct, not just recorded in the DB); a `.txt` disguised as a file upload is rejected by real MIME sniffing; delete 409s while a post's `cover_image` still points at it, then succeeds (and the file is actually gone from disk) once that post's cover is cleared; author cover-image upload updates the post and creates a library row; uploading to another author's post 403s; missing file / unknown id return 422/404 correctly.
 - [x] Auth module — `app/Auth/{Model,Repository,Middleware,Controller}.php`; `AuthMiddleware::requireUser()`/`::requireAdmin()` ready for Author/Admin modules to call
 
 ## 10. Routing
 - [x] `routes/api.php` created with `/api/v1` prefix stripped in `index.php`; a `/health` route proves the pipeline end-to-end
 - [x] Method validation (405) + JSON 404 for unmatched routes
-- [x] Module route files (`routes/api/posts.php` etc.) — `routes/api/auth.php`, `routes/api/categories.php`, `routes/api/posts.php`, `routes/api/comments.php` added; only `media.php` left
-- [ ] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` exists and is used by `/auth/me`, `/admin/categories/*`, Posts' `/author/*`+`/admin/*`, and `/admin/comments/*`; Media routes will apply it once built
+- [x] Module route files (`routes/api/posts.php` etc.) — all five built: `auth.php`, `categories.php`, `posts.php`, `comments.php`, `media.php`
+- [x] Auth + admin middleware applied to routes (depends on Section 13) — `AuthMiddleware` now guards every non-public route: `/auth/me`, `/admin/categories/*`, Posts' `/author/*`+`/admin/*`, `/admin/comments/*`, `/admin/media/*`
 
 ## 11. Frontend → API Integration (not started)
 

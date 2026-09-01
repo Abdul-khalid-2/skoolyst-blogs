@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/core/Env.php';
-require __DIR__ . '/core/Config.php';
-require __DIR__ . '/core/Database.php';
-require __DIR__ . '/core/Request.php';
-require __DIR__ . '/core/Response.php';
-require __DIR__ . '/core/Validator.php';
-require __DIR__ . '/core/Router.php';
-require __DIR__ . '/core/Session.php';
+require_once __DIR__ . '/core/Env.php';
+require_once __DIR__ . '/core/Config.php';
+require_once __DIR__ . '/core/Database.php';
+require_once __DIR__ . '/core/Request.php';
+require_once __DIR__ . '/core/Response.php';
+require_once __DIR__ . '/core/Validator.php';
+require_once __DIR__ . '/core/Router.php';
+require_once __DIR__ . '/core/Session.php';
 
 Env::load(__DIR__ . '/.env');
 Config::init(__DIR__ . '/config');
@@ -48,5 +48,5 @@ $trimmedPath = substr($request->path, strlen('/api/v1')) ?: '/';
 $request = $request->withPath($trimmedPath);
 
 $router = new Router();
-require __DIR__ . '/routes/api.php';
+require_once __DIR__ . '/routes/api.php';
 $router->dispatch($request);

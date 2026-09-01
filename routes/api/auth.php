@@ -6,10 +6,10 @@
  * @var Router $router
  */
 
-require __DIR__ . '/../../app/Auth/Model.php';
-require __DIR__ . '/../../app/Auth/Repository.php';
-require __DIR__ . '/../../app/Auth/Middleware.php';
-require __DIR__ . '/../../app/Auth/Controller.php';
+require_once __DIR__ . '/../../app/Auth/Model.php';
+require_once __DIR__ . '/../../app/Auth/Repository.php';
+require_once __DIR__ . '/../../app/Auth/Middleware.php';
+require_once __DIR__ . '/../../app/Auth/Controller.php';
 
 $router->post('/auth/login', ['AuthController', 'login']);
 $router->post('/auth/logout', ['AuthController', 'logout']);

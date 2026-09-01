@@ -13,6 +13,7 @@ class Request
     public array $query;
     public array $body;
     public array $headers;
+    public array $files;
 
     public function __construct()
     {
@@ -24,6 +25,7 @@ class Request
         $this->query = $_GET;
         $this->body = $this->parseBody();
         $this->headers = $this->parseHeaders();
+        $this->files = $_FILES;
     }
 
     private function parseBody(): array
@@ -64,6 +66,14 @@ class Request
     public function input(string $key, mixed $default = null): mixed
     {
         return $this->body[$key] ?? $this->query[$key] ?? $default;
+    }
+
+    /** Returns the uploaded file's $_FILES entry for $key, or null if none was sent. */
+    public function file(string $key): ?array
+    {
+        return isset($this->files[$key]) && $this->files[$key]['error'] !== UPLOAD_ERR_NO_FILE
+            ? $this->files[$key]
+            : null;
     }
 
     public function bearerToken(): ?string

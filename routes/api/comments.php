@@ -9,9 +9,9 @@
  * @var Router $router
  */
 
-require __DIR__ . '/../../app/Comments/Model.php';
-require __DIR__ . '/../../app/Comments/Repository.php';
-require __DIR__ . '/../../app/Comments/Controller.php';
+require_once __DIR__ . '/../../app/Comments/Model.php';
+require_once __DIR__ . '/../../app/Comments/Repository.php';
+require_once __DIR__ . '/../../app/Comments/Controller.php';
 
 // Public
 $router->post('/posts/{id}/comments', ['CommentController', 'store']);

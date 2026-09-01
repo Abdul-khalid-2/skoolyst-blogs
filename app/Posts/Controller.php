@@ -139,6 +139,62 @@ class PostController
         Response::success(['message' => 'Post deleted.']);
     }
 
+    /** POST /author/posts/{id}/image — uploads a cover image for one of the author's own posts. */
+    public static function uploadCoverImage(Request $request, array $args): void
+    {
+        $user = AuthMiddleware::requireUser();
+        $id = (int) $args['id'];
+        $existing = PostRepository::findById($id);
+
+        if ($existing === null) {
+            Response::notFound('Post not found.');
+            return;
+        }
+
+        if ((int) $existing['author_id'] !== $user->id) {
+            Response::forbidden('You can only edit your own posts.');
+            return;
+        }
+
+        $file = $request->file('image');
+        if ($file === null) {
+            Response::error('Validation failed.', 422, ['image' => ['An image file is required.']]);
+            return;
+        }
+
+        try {
+            $stored = Upload::store($file);
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+            return;
+        }
+
+        // Tracked in the shared media library too, not just stamped onto the
+        // post, so it also shows up in the dashboard's media manager like
+        // any other upload.
+        MediaRepository::create([
+            'filename' => $stored['filename'],
+            'file_path' => $stored['path'],
+            'alt_text' => null,
+            'uploaded_by' => $user->id,
+        ]);
+
+        PostRepository::update($id, [
+            'title' => $existing['title'],
+            'slug' => $existing['slug'],
+            'excerpt' => $existing['excerpt'],
+            'body' => $existing['body'],
+            'cover_image' => $stored['path'],
+            'status' => $existing['status'],
+            'category_id' => $existing['category_id'],
+            'published_date' => $existing['published_date'],
+            'seo_title' => $existing['seo_title'],
+            'seo_description' => $existing['seo_description'],
+        ]);
+
+        Response::success(Post::fromRow(PostRepository::findById($id))->toArray());
+    }
+
     // ---------------------------------------------------------------
     // Admin (any post, any author)
     // ---------------------------------------------------------------

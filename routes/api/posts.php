@@ -9,9 +9,12 @@
  * @var Router $router
  */
 
-require __DIR__ . '/../../app/Posts/Model.php';
-require __DIR__ . '/../../app/Posts/Repository.php';
-require __DIR__ . '/../../app/Posts/Controller.php';
+require_once __DIR__ . '/../../app/Posts/Model.php';
+require_once __DIR__ . '/../../app/Posts/Repository.php';
+require_once __DIR__ . '/../../core/Upload.php';
+require_once __DIR__ . '/../../app/Media/Model.php';
+require_once __DIR__ . '/../../app/Media/Repository.php';
+require_once __DIR__ . '/../../app/Posts/Controller.php';
 
 // Public
 $router->get('/posts', ['PostController', 'index']);
@@ -23,6 +26,7 @@ $router->get('/author/posts', ['PostController', 'authorIndex']);
 $router->post('/author/posts', ['PostController', 'authorStore']);
 $router->patch('/author/posts/{id}', ['PostController', 'authorUpdate']);
 $router->delete('/author/posts/{id}', ['PostController', 'authorDestroy']);
+$router->post('/author/posts/{id}/image', ['PostController', 'uploadCoverImage']);
 
 // Admin (any post, any author)
 $router->get('/admin/posts', ['PostController', 'adminIndex']);

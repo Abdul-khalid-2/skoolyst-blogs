@@ -10,10 +10,10 @@
  * @var Router $router
  */
 
-require __DIR__ . '/../../core/Str.php';
-require __DIR__ . '/../../app/Categories/Model.php';
-require __DIR__ . '/../../app/Categories/Repository.php';
-require __DIR__ . '/../../app/Categories/Controller.php';
+require_once __DIR__ . '/../../core/Str.php';
+require_once __DIR__ . '/../../app/Categories/Model.php';
+require_once __DIR__ . '/../../app/Categories/Repository.php';
+require_once __DIR__ . '/../../app/Categories/Controller.php';
 
 // Public
 $router->get('/categories', ['CategoryController', 'index']);

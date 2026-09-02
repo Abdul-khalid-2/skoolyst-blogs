@@ -14,7 +14,13 @@
  *                             that sits before the user/logout block
  *                             (e.g. "+ New Post" or "← Back to Posts") —
  *                             not escaped, since it's markup, not text
+ *   $topbarTitleId    string  optional id="" attribute for the topbar
+ *                             <h1> — only post-editor.php needs this
+ *                             (its JS swaps "New Post"/"Edit Post" text
+ *                             via getElementById), other pages leave it
+ *                             unset and get a plain <h1> with no id
  */
+$topbarTitleId = $topbarTitleId ?? '';
 ?>
 <!doctype html>
 <html lang="en">
@@ -38,7 +44,7 @@
         <div style="display:flex;align-items:center;gap:.75rem">
           <button class="dash-sidebar-toggle" aria-label="Toggle sidebar">☰</button>
           <div class="topbar-title">
-            <h1><?= $topbarTitle ?></h1>
+            <h1<?= $topbarTitleId !== '' ? ' id="' . $topbarTitleId . '"' : '' ?>><?= $topbarTitle ?></h1>
             <p><?= $topbarSubtitle ?></p>
           </div>
         </div>

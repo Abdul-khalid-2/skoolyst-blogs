@@ -4,7 +4,7 @@
  * Tiny router — no external dependency.
  * Routes are registered as: $router->get('/posts', $handler);
  * Supports {param} placeholders, e.g. '/posts/{id}'.
- * All routes are automatically mounted under the API prefix (see index.php).
+ * All routes are automatically mounted under the API prefix (see router.php).
  */
 class Router
 {
